@@ -82,7 +82,7 @@ describe("App routing", () => {
     expect(replaceStateSpy).not.toHaveBeenCalledWith(null, "", "/");
   });
 
-  it("canonicalizes an unknown path back to the home tab", async () => {
+  it("canonicalizes an unknown path back to the keymap tab", async () => {
     goTo("/not-a-real-tab");
 
     render(<App />);
