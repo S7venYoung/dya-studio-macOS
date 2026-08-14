@@ -2,7 +2,6 @@ import { useContext, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IconCloudUpload,
-  IconHome,
   IconKeyboard,
   IconPlugConnected,
   IconPointer,
@@ -26,7 +25,6 @@ import { StudioUnlockProvider } from "./contexts/StudioUnlockContext";
 import { TabNavigation } from "./components/TabNavigation";
 import type { TabItem } from "./components/TabNavigation";
 import { AppLayout } from "./layouts/AppLayout";
-import { HomePage } from "./pages/HomePage";
 import { ConnectionPage } from "./pages/ConnectionPage";
 import { KeymapPage } from "./pages/KeymapPage";
 import { TrackballPage } from "./pages/TrackballPage";
@@ -55,12 +53,6 @@ import {
 
 function getTabs(t: (key: string) => string): TabItem[] {
   return [
-    {
-      id: "home",
-      label: t("Home"),
-      icon: <IconHome size={18} />,
-      content: <HomePage />,
-    },
     {
       id: "keymap",
       label: t("Keymap"),
@@ -172,7 +164,7 @@ function AppContent() {
   const tabs = getTabs(t);
   const { isAvailable: isDevtoolAvailable } = useDevtool();
   const [devtoolOpen, setDevtoolOpen] = useState(false);
-  const activeTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "home";
+  const activeTab = tabs.some((tab) => tab.id === urlTab) ? urlTab : "keymap";
 
   // The release notes page is a standalone, connection-independent route so it
   // stays reachable from the splash screen and via GitHub Release deep links.
@@ -199,7 +191,7 @@ function AppContent() {
   const onOauthCallback = pathname === OAUTH_CALLBACK_PATH;
 
   useEffect(() => {
-    // Canonicalize unknown paths (e.g. a stale/typo'd link) to the home tab,
+    // Canonicalize unknown paths (e.g. a stale/typo'd link) to the keymap tab,
     // but leave the standalone routes alone. The OAuth callback especially:
     // rewriting it to "/" would discard the ?code=&state= query string before
     // AbyssCallbackPage ever gets to read it.
