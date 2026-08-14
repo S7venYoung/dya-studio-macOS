@@ -1,0 +1,77 @@
+name: Build SwiftUI macOS App
+
+on:
+  pull_request:
+  push:
+    branches:
+      - codex/swiftui-native-bridge
+    tags:
+      - "swift-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-arm64-dmg:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Build React application
+        run: npm run build
+
+      - name: Build native SwiftUI shell
+        run: swift build --package-path apple --configuration release --arch arm64
+
+      - name: Assemble app bundle
+        run: |
+          APP="release/DYA Studio.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp apple/.build/arm64-apple-macosx/release/DYAStudioMac "$APP/Contents/MacOS/DYAStudioMac"
+          cp apple/Info.plist "$APP/Contents/Info.plist"
+          cp build/icon.icns "$APP/Contents/Resources/icon.icns"
+          ditto dist "$APP/Contents/Resources/dist"
+          codesign --force --deep --sign - "$APP"
+
+      - name: Create DMG
+        run: |
+          mkdir -p release/dmg-root
+          ditto "release/DYA Studio.app" "release/dmg-root/DYA Studio.app"
+          ln -s /Applications release/dmg-root/Applications
+          hdiutil create -volname "DYA Studio" -srcfolder release/dmg-root -ov -format UDZO "release/DYA-Studio-1.1.0-arm64.dmg"
+          codesign --verify --deep --strict "release/DYA Studio.app"
+
+      - name: Upload Apple Silicon DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DYA-Studio-SwiftUI-macOS-arm64
+          path: release/DYA-Studio-1.1.0-arm64.dmg
+          retention-days: 14
+
+  release:
+    needs: build-arm64-dmg
+    if: startsWith(github.ref, 'refs/tags/swift-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: DYA-Studio-SwiftUI-macOS-arm64
+          path: release
+
+      - name: Publish release without generated notes
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.dmg

@@ -1,5 +1,6 @@
 import { connectSerial } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectWebUsb } from "../webUsb";
+import { connectNativeSerial } from "../nativeSerial";
 import {
   connect,
   isUsbConnectionAvailable,
@@ -13,6 +14,11 @@ jest.mock("@cormoran/zmk-studio-react-hook", () => ({
 
 jest.mock("../webUsb", () => ({
   connect: jest.fn(),
+}));
+
+jest.mock("../nativeSerial", () => ({
+  connectNativeSerial: jest.fn(),
+  isNativeSerialAvailable: jest.fn(() => window.dyaNative !== undefined),
 }));
 
 type NavigatorWithOptionalTransport = Navigator & {
@@ -30,6 +36,17 @@ describe("USB transport selection", () => {
     jest.clearAllMocks();
     delete (navigator as NavigatorWithOptionalTransport).serial;
     delete (navigator as NavigatorWithOptionalTransport).usb;
+    delete window.dyaNative;
+  });
+
+  test("prefers the macOS native bridge", async () => {
+    window.dyaNative = { platform: "macOS" } as DYANativeBridge;
+
+    await connect();
+
+    expect(connectNativeSerial).toHaveBeenCalledTimes(1);
+    expect(connectSerial).not.toHaveBeenCalled();
+    expect(connectWebUsb).not.toHaveBeenCalled();
   });
 
   test("uses WebUSB for Android Chrome", async () => {

@@ -4,6 +4,10 @@ import {
   isWebSerialSupported,
 } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectWebUsb } from "./webUsb";
+import {
+  connectNativeSerial,
+  isNativeSerialAvailable,
+} from "./nativeSerial";
 
 export function shouldUseWebUsbForUsbConnection(
   userAgent = navigator.userAgent,
@@ -13,12 +17,16 @@ export function shouldUseWebUsbForUsbConnection(
 
 export function isUsbConnectionAvailable() {
   return (
+    isNativeSerialAvailable() ||
     isWebSerialSupported() ||
     (shouldUseWebUsbForUsbConnection() && "usb" in navigator)
   );
 }
 
 export async function connect(): Promise<RpcTransport> {
+  if (isNativeSerialAvailable()) {
+    return connectNativeSerial();
+  }
   if (shouldUseWebUsbForUsbConnection()) {
     return connectWebUsb();
   }
