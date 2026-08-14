@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 export function tabIdFromPathname(pathname: string): string {
   const segment = pathname.replace(/^\/+/, "").split("/")[0];
-  return segment || "home";
+  return segment || "keymap";
 }
 
 export function pathnameFromTabId(tabId: string): string {
-  return tabId === "home" ? "/" : `/${tabId}`;
+  return tabId === "keymap" ? "/" : `/${tabId}`;
 }
 
 /**
