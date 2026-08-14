@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Network
 import SwiftUI
 import WebKit
 
@@ -38,14 +39,22 @@ struct StudioWebView: NSViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         context.coordinator.webView = webView
 
         guard let resourceURL = Bundle.main.resourceURL else {
             context.coordinator.showFatalError("App resources could not be found.")
             return webView
         }
-        let indexURL = resourceURL.appendingPathComponent("dist/index.html")
-        webView.loadFileURL(indexURL, allowingReadAccessTo: resourceURL)
+        let distURL = resourceURL.appendingPathComponent("dist", isDirectory: true)
+        do {
+            let server = try LocalWebServer(rootURL: distURL)
+            let baseURL = try server.start()
+            context.coordinator.webServer = server
+            webView.load(URLRequest(url: baseURL))
+        } catch {
+            context.coordinator.showFatalError(error.localizedDescription)
+        }
         return webView
     }
 
@@ -71,11 +80,19 @@ struct StudioWebView: NSViewRepresentable {
       window.__dyaNativeEmit = (type, detail) => {
         for (const listener of listeners.get(type) || []) listener({ type, detail });
       };
+      window.addEventListener("error", (event) => {
+        alert(`JavaScript error: ${event.message}`);
+      });
+      window.addEventListener("unhandledrejection", (event) => {
+        const message = event.reason?.message || String(event.reason);
+        alert(`JavaScript error: ${message}`);
+      });
     })();
     """#
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandlerWithReply {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandlerWithReply {
         weak var webView: WKWebView?
+        var webServer: LocalWebServer?
         private let serial = SerialPortController()
 
         override init() {
@@ -160,6 +177,27 @@ struct StudioWebView: NSViewRepresentable {
             showFatalError(error.localizedDescription)
         }
 
+        func webView(
+            _ webView: WKWebView,
+            didFailProvisionalNavigation navigation: WKNavigation!,
+            withError error: Error
+        ) {
+            showFatalError(error.localizedDescription)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            runJavaScriptAlertPanelWithMessage message: String,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping () -> Void
+        ) {
+            let alert = NSAlert()
+            alert.messageText = "DYA Studio"
+            alert.informativeText = message
+            alert.runModal()
+            completionHandler()
+        }
+
         func showFatalError(_ message: String) {
             DispatchQueue.main.async {
                 let alert = NSAlert()
@@ -169,6 +207,112 @@ struct StudioWebView: NSViewRepresentable {
             }
         }
     }
+}
+
+final class LocalWebServer {
+    private let rootURL: URL
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "com.s7venyoung.dya-studio.web-server")
+
+    init(rootURL: URL) throws {
+        guard FileManager.default.fileExists(atPath: rootURL.appendingPathComponent("index.html").path) else {
+            throw BridgeError.message("The React application bundle is missing.")
+        }
+        self.rootURL = rootURL.standardizedFileURL
+        listener = try NWListener(using: .tcp, on: .any)
+    }
+
+    func start() throws -> URL {
+        let ready = DispatchSemaphore(value: 0)
+        var startupError: Error?
+
+        listener.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                ready.signal()
+            case .failed(let error):
+                startupError = error
+                ready.signal()
+            default:
+                break
+            }
+        }
+        listener.newConnectionHandler = { [weak self] connection in
+            self?.handle(connection)
+        }
+        listener.start(queue: queue)
+
+        guard ready.wait(timeout: .now() + 5) == .success else {
+            listener.cancel()
+            throw BridgeError.message("The local web server timed out while starting.")
+        }
+        if let startupError {
+            throw startupError
+        }
+        guard let port = listener.port else {
+            throw BridgeError.message("The local web server did not allocate a port.")
+        }
+        return URL(string: "http://127.0.0.1:\(port.rawValue)/")!
+    }
+
+    private func handle(_ connection: NWConnection) {
+        connection.start(queue: queue)
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, _, _ in
+            guard let self, let data,
+                  let request = String(data: data, encoding: .utf8),
+                  let firstLine = request.components(separatedBy: "\r\n").first else {
+                connection.cancel()
+                return
+            }
+            let components = firstLine.split(separator: " ")
+            guard components.count >= 2, components[0] == "GET" else {
+                self.respond(connection, status: "405 Method Not Allowed", body: Data(), mimeType: "text/plain")
+                return
+            }
+
+            let rawPath = String(components[1]).split(separator: "?", maxSplits: 1).first.map(String.init) ?? "/"
+            let decodedPath = rawPath.removingPercentEncoding ?? rawPath
+            let relativePath = decodedPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            var fileURL = self.rootURL.appendingPathComponent(relativePath.isEmpty ? "index.html" : relativePath)
+                .standardizedFileURL
+
+            if !fileURL.path.hasPrefix(self.rootURL.path) || !FileManager.default.fileExists(atPath: fileURL.path) {
+                fileURL = self.rootURL.appendingPathComponent("index.html")
+            }
+
+            do {
+                let body = try Data(contentsOf: fileURL)
+                self.respond(connection, status: "200 OK", body: body, mimeType: Self.mimeType(for: fileURL))
+            } catch {
+                self.respond(connection, status: "500 Internal Server Error", body: Data(), mimeType: "text/plain")
+            }
+        }
+    }
+
+    private func respond(_ connection: NWConnection, status: String, body: Data, mimeType: String) {
+        let header = "HTTP/1.1 \(status)\r\nContent-Type: \(mimeType)\r\nContent-Length: \(body.count)\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n"
+        var response = Data(header.utf8)
+        response.append(body)
+        connection.send(content: response, completion: .contentProcessed { _ in connection.cancel() })
+    }
+
+    private static func mimeType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
+        case "html": return "text/html; charset=utf-8"
+        case "js", "mjs": return "text/javascript; charset=utf-8"
+        case "css": return "text/css; charset=utf-8"
+        case "json", "map": return "application/json"
+        case "svg": return "image/svg+xml"
+        case "png": return "image/png"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "webp": return "image/webp"
+        case "woff": return "font/woff"
+        case "woff2": return "font/woff2"
+        default: return "application/octet-stream"
+        }
+    }
+
+    deinit { listener.cancel() }
 }
 
 final class SerialPortController {

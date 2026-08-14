@@ -10,7 +10,7 @@ export function pathnameFromTabId(tabId: string): string {
 }
 
 export function tabIdFromLocation(location: Location): string {
-  if (location.protocol === "file:") {
+  if (location.protocol === "file:" || window.dyaNative) {
     return tabIdFromPathname(location.hash.replace(/^#/, ""));
   }
   return tabIdFromPathname(location.pathname);
@@ -25,15 +25,14 @@ export function useUrlTab(): [string, (tabId: string) => void] {
 
   useEffect(() => {
     const onLocationChange = () => setTabId(tabIdFromLocation(window.location));
-    const eventName =
-      window.location.protocol === "file:" ? "hashchange" : "popstate";
+    const eventName = window.dyaNative ? "hashchange" : "popstate";
     window.addEventListener(eventName, onLocationChange);
     return () => window.removeEventListener(eventName, onLocationChange);
   }, []);
 
   const navigate = useCallback((nextTabId: string) => {
     const path = pathnameFromTabId(nextTabId);
-    if (window.location.protocol === "file:") {
+    if (window.dyaNative) {
       const hash = `#${path}`;
       if (window.location.hash !== hash) window.location.hash = hash;
     } else if (window.location.pathname !== path) {
