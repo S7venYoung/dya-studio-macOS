@@ -7,7 +7,7 @@ the web application and Apple APIs.
 The bundled React files are served on the fixed loopback origin
 `http://127.0.0.1:28741`. Keeping this origin stable is required so WebKit's
 local storage (including the connection-notice preference) survives app
-restarts. The listener is restricted to the loopback interface.
+restarts. The web view only loads it through the loopback address.
 
 The first bridge transport is native USB serial. React still consumes the same
 `RpcTransport` streams, keeping native details out of the application pages.

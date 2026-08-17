@@ -220,9 +220,7 @@ final class LocalWebServer {
             throw BridgeError.message("The React application bundle is missing.")
         }
         self.rootURL = rootURL.standardizedFileURL
-        let parameters = NWParameters.tcp
-        parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: Self.port)
-        listener = try NWListener(using: parameters, on: Self.port)
+        listener = try NWListener(using: .tcp, on: Self.port)
     }
 
     func start() throws -> URL {
