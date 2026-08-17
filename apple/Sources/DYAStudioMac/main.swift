@@ -210,6 +210,7 @@ struct StudioWebView: NSViewRepresentable {
 }
 
 final class LocalWebServer {
+    private static let port = NWEndpoint.Port(rawValue: 28_741)!
     private let rootURL: URL
     private let listener: NWListener
     private let queue = DispatchQueue(label: "com.s7venyoung.dya-studio.web-server")
@@ -219,7 +220,9 @@ final class LocalWebServer {
             throw BridgeError.message("The React application bundle is missing.")
         }
         self.rootURL = rootURL.standardizedFileURL
-        listener = try NWListener(using: .tcp, on: .any)
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: Self.port)
+        listener = try NWListener(using: parameters, on: Self.port)
     }
 
     func start() throws -> URL {
