@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import {
   useState,
   useMemo,
@@ -19,7 +20,7 @@ import {
 import * as Dialog from "@radix-ui/react-dialog";
 import { AdvancedSettingsSection } from "../components/AdvancedSettingsSection";
 import { LoadingIndicator } from "../components/LoadingIndicator";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { useSettings } from "../hooks/useSettings";
 import { useResetSettings } from "../hooks/useResetSettings";
 import { useDebouncedMemoryWrite } from "../hooks/useDebouncedMemoryWrite";
@@ -27,6 +28,10 @@ import { useLanguage } from "../hooks/useLanguage";
 import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu";
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useSettingsVersionHistory } from "../hooks/versionHistory/useSettingsVersionHistory";
+import {
+  useWebMCPTools,
+  type WebMCPToolDefinition,
+} from "../lib/webmcp/useWebMCPTools";
 
 // Helper to format milliseconds to human readable
 function formatMs(
@@ -34,9 +39,10 @@ function formatMs(
   t: (key: string, params?: Record<string, number | string>) => string,
 ): string {
   if (ms === 0) return t("Never");
-  if (ms < 60000) return t("{{count}}s", { count: ms / 1000 });
-  if (ms < 3600000) return t("{{count}}m", { count: ms / 60000 });
-  return t("{{count}}h", { count: ms / 3600000 });
+  const rounded = (value: number) => Math.round(value * 100) / 100;
+  if (ms < 60000) return t("{{count}}s", { count: rounded(ms / 1000) });
+  if (ms < 3600000) return t("{{count}}m", { count: rounded(ms / 60000) });
+  return t("{{count}}h", { count: rounded(ms / 3600000) });
 }
 
 // Convert milliseconds to minutes
@@ -70,13 +76,27 @@ const SLEEP_PRESETS = [
   { value: 240, label: "4 hours" },
 ];
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTimeout(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 0xffffffff
+  );
+}
+
 interface TimeDropdownProps {
+  label: string;
   value: number; // in milliseconds
   onChange: (ms: number) => void;
   presets: { value: number; label: string }[];
 }
 
-function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
+function TimeDropdown({ label, value, onChange, presets }: TimeDropdownProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [customInput, setCustomInput] = useState("");
@@ -154,7 +174,8 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
       <button
         ref={buttonRef}
         type="button"
-        className="input-field w-40 text-sm flex items-center justify-between"
+        aria-label={label}
+        className="w-40 min-h-9 px-3 py-2 rounded-lg text-sm flex items-center justify-between gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-border-hover)]"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>{displayText}</span>
@@ -315,8 +336,11 @@ export function SettingsPage() {
 
   const write = useCallback(
     async (value: { idleMs: number; sleepMs: number }) => {
-      await setActivitySettings(value.idleMs, value.sleepMs);
+      const success = await setActivitySettings(value.idleMs, value.sleepMs);
       setPending(null);
+      if (!success) {
+        return;
+      }
       setShowSaved(true);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setShowSaved(false), 2000);
@@ -346,27 +370,137 @@ export function SettingsPage() {
 
   const isSaving = saveState === "queued" || saveState === "saving";
 
+  const webMCPTools: WebMCPToolDefinition[] = [
+    {
+      name: "get_power_management_settings",
+      description:
+        "Read the connected keyboard's central power-management timeouts in milliseconds.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: true },
+      execute: async () => {
+        const current = (await loadAllSettings()).find(
+          (device) => device.sourceId === 0,
+        );
+        if (!current) {
+          return {
+            success: false,
+            error:
+              "Power-management settings are unavailable. Connect a compatible keyboard first.",
+          };
+        }
+        return {
+          success: true,
+          idleMs: current.idleMs,
+          sleepMs: current.sleepMs,
+          deviceName: current.deviceName,
+        };
+      },
+    },
+    {
+      name: "set_power_management_timeouts",
+      description:
+        "Persist the connected keyboard's idle and sleep timeouts. Both values are whole milliseconds; 0 disables that timeout.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          idleMs: {
+            type: "integer",
+            minimum: 0,
+            maximum: 4294967295,
+            description:
+              "Milliseconds before the keyboard enters idle mode; 0 means never.",
+          },
+          sleepMs: {
+            type: "integer",
+            minimum: 0,
+            maximum: 4294967295,
+            description: "Milliseconds before deep sleep; 0 means never.",
+          },
+        },
+        required: ["idleMs", "sleepMs"],
+        additionalProperties: false,
+      },
+      execute: async (input) => {
+        if (
+          !isObject(input) ||
+          !isTimeout(input.idleMs) ||
+          !isTimeout(input.sleepMs)
+        ) {
+          return {
+            success: false,
+            error:
+              "idleMs and sleepMs must be whole milliseconds from 0 to 4294967295.",
+          };
+        }
+
+        const success = await setActivitySettings(input.idleMs, input.sleepMs);
+        return success
+          ? { success: true, idleMs: input.idleMs, sleepMs: input.sleepMs }
+          : {
+              success: false,
+              error:
+                "The keyboard did not accept the power-management update. Check the connection and unlock state.",
+            };
+      },
+    },
+    {
+      name: "reset_all_keyboard_settings",
+      description:
+        "Factory-reset every persisted keyboard setting, including keymap and custom settings, to firmware defaults. This cannot be undone.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      execute: async () => {
+        const success = await resetAllSettings();
+        return success
+          ? {
+              success: true,
+              message:
+                "The keyboard reset request was accepted. The keyboard may reboot before the change is visible.",
+            }
+          : {
+              success: false,
+              error:
+                "The keyboard reset did not complete. Check the connection and unlock state.",
+            };
+      },
+    },
+  ];
+  useWebMCPTools(webMCPTools);
+
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
-            <IconSettings size={24} className="text-[var(--color-electric)]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-medium text-[var(--color-text)]">
-              {t("Settings")}
-            </h1>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              {t("Device configuration and power management")}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="shrink-0 p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+              <IconSettings
+                size={24}
+                className="text-[var(--color-electric)]"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-medium text-[var(--color-text)]">
+                {t("Settings")}
+              </h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("Device configuration and power management")}
+              </p>
+            </div>
           </div>
           {/* The page keeps its state across tab switches, so re-reading the
               device is an explicit action. */}
           {isAvailable && (
-            <div className="flex items-center gap-2 ml-auto">
-              <button
+            <div className="flex flex-wrap items-center gap-2">
+              <ResponsiveButton
+                label={t("Reload")}
                 className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
                 onClick={() => void handleReload()}
                 disabled={isLoading}
@@ -376,8 +510,7 @@ export function SettingsPage() {
                   size={16}
                   className={isLoading ? "animate-spin" : undefined}
                 />
-                {t("Reload")}
-              </button>
+              </ResponsiveButton>
               <ResetVersionMenu
                 versions={versionHistory.versions}
                 onSelectVersion={versionHistory.selectVersion}
@@ -436,13 +569,13 @@ export function SettingsPage() {
         {centralSettings ? (
           <div className="space-y-6">
             {/* Power Management */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
                 {t("Power Management")}
               </h3>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {t("Idle Timeout")}
@@ -452,13 +585,14 @@ export function SettingsPage() {
                     </p>
                   </div>
                   <TimeDropdown
+                    label={t("Idle Timeout")}
                     value={idleTimeout}
                     onChange={handleIdleChange}
                     presets={IDLE_PRESETS}
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       {t("Sleep Timeout")}
@@ -468,6 +602,7 @@ export function SettingsPage() {
                     </p>
                   </div>
                   <TimeDropdown
+                    label={t("Sleep Timeout")}
                     value={sleepTimeout}
                     onChange={handleSleepChange}
                     presets={SLEEP_PRESETS}
@@ -528,11 +663,11 @@ export function SettingsPage() {
             whenever a device is connected, independent of the settings RPC
             subsystem, since it is a core-protocol call. */}
         {connection.isConnected && (
-          <div className="glass-card p-6 border border-red-500/20 mt-6">
+          <div className="glass-card p-4 sm:p-6 border border-red-500/20 mt-6">
             <h3 className="text-sm font-medium text-red-400 mb-4">
               {t("Danger Zone")}
             </h3>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   {t("Reset all settings")}

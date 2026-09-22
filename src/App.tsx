@@ -14,10 +14,8 @@ import {
 import { SplashScreen } from "./components/SplashScreen";
 import { ReleaseNotesPage, RELEASE_NOTES_PATH } from "./pages/ReleaseNotesPage";
 import { ReconnectingOverlay } from "./components/ReconnectingOverlay";
-import {
-  DeviceConnectionProvider,
-  ConnectionContext,
-} from "./components/DeviceConnection";
+import { DeviceConnectionProvider } from "./components/DeviceConnection";
+import { ConnectionContext } from "./contexts/DeviceConnectionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { KeyboardLayoutProvider } from "./contexts/KeyboardLayoutProvider";
@@ -37,7 +35,7 @@ import {
   IMPORT_EXPORT_TAB_ID,
 } from "./pages/ImportExportPage";
 import { AbyssCallbackPage } from "./pages/AbyssCallbackPage";
-import { isAbyssConfigured } from "./lib/abyss/abyssConfig";
+import { isAbyssTabVisible } from "./lib/abyss/abyssConfig";
 import { OAUTH_CALLBACK_PATH } from "./lib/abyss/abyssOAuth";
 import { useLanguage } from "./hooks/useLanguage";
 import { useUrlTab, pathnameFromTabId } from "./hooks/useUrlTab";
@@ -95,9 +93,9 @@ function getTabs(t: (key: string) => string): TabItem[] {
       icon: <IconPuzzle size={18} />,
       content: <CustomSubsystemsPage />,
     },
-    // Hidden entirely when the build has no Abyss OAuth client id — the tab's
-    // only entry point is a sign-in that could not succeed.
-    ...(isAbyssConfigured()
+    // A local Vite server keeps this available for UI development without
+    // credentials. Deployed builds require a real Abyss OAuth client id.
+    ...(isAbyssTabVisible()
       ? [
           {
             id: IMPORT_EXPORT_TAB_ID,
@@ -263,7 +261,7 @@ function AppContent() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="h-screen"
+          className="app-connected-shell"
         >
           <AppLayout
             isConnected={connection.isConnected}

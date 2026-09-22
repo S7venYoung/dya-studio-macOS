@@ -28,6 +28,12 @@ jobs:
       - name: Install web dependencies
         run: npm ci
 
+      - name: Validate React application
+        run: |
+          npm run lint
+          npm test -- --runInBand
+          npm run spec:check
+
       - name: Build React application
         run: npm run build
 
@@ -36,10 +42,13 @@ jobs:
 
       - name: Assemble app bundle
         run: |
+          APP_VERSION=$(node -e 'const data=require("./src/i18n/releaseNotes.json"); console.log(data.releases.find((release) => release.version !== "upcoming").version)')
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
           APP="release/DYA Studio.app"
           mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
           cp apple/.build/arm64-apple-macosx/release/DYAStudioMac "$APP/Contents/MacOS/DYAStudioMac"
           cp apple/Info.plist "$APP/Contents/Info.plist"
+          plutil -replace CFBundleShortVersionString -string "$APP_VERSION" "$APP/Contents/Info.plist"
           cp build/icon.icns "$APP/Contents/Resources/icon.icns"
           ditto dist "$APP/Contents/Resources/dist"
           codesign --force --deep --sign - "$APP"
@@ -49,14 +58,14 @@ jobs:
           mkdir -p release/dmg-root
           ditto "release/DYA Studio.app" "release/dmg-root/DYA Studio.app"
           ln -s /Applications release/dmg-root/Applications
-          hdiutil create -volname "DYA Studio" -srcfolder release/dmg-root -ov -format UDZO "release/DYA-Studio-1.1.0-arm64.dmg"
+          hdiutil create -volname "DYA Studio" -srcfolder release/dmg-root -ov -format UDZO "release/DYA-Studio-${APP_VERSION}-arm64.dmg"
           codesign --verify --deep --strict "release/DYA Studio.app"
 
       - name: Upload Apple Silicon DMG
         uses: actions/upload-artifact@v4
         with:
           name: DYA-Studio-SwiftUI-macOS-arm64
-          path: release/DYA-Studio-1.1.0-arm64.dmg
+          path: release/DYA-Studio-*-arm64.dmg
           retention-days: 14
 
   release:

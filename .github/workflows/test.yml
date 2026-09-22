@@ -4,7 +4,12 @@ on:
   push:
     branches: ["main"]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+
+# Jobs override this only where preview deployment or PR comments require it.
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -19,6 +24,8 @@ jobs:
         run: npm ci
       - name: Run lint
         run: npm run lint
+      - name: Check product specifications
+        run: npm run spec:check
       - name: Run tests
         run: npm test
       - name: Build for Cloudflare Workers

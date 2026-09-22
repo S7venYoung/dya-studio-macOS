@@ -9,6 +9,54 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Search behaviors...": "ビヘイビアを検索...",
+  "Keep the selected behavior category": "選択したビヘイビアカテゴリを維持",
+  "Reset the behavior category when reopening":
+    "開き直すとビヘイビアカテゴリをリセット",
+  "Keep selected category": "選択カテゴリを維持",
+  "Configure Quick Select": "クイック選択を設定",
+  "Quick Select settings": "クイック選択の設定",
+  "Reset Quick Select settings": "クイック選択をリセット",
+  "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
+    "クイック選択の項目を設定します。プリセットは表示／非表示、その他は固定／固定解除できます。",
+  Preset: "プリセット",
+  "Show this preset behavior": "このプリセットのビヘイビアを表示",
+  "Hide this preset behavior": "このプリセットのビヘイビアを非表示",
+  "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
+    "プリセットの表示、表示中の項目の固定、クイック選択の並び順を設定します。",
+  "Preset behaviors": "プリセットのビヘイビア",
+  Shown: "表示",
+  Hidden: "非表示",
+  "Visible quick selects": "表示中のクイック選択",
+  "Pin this behavior": "このビヘイビアを固定",
+  "Unpin this behavior": "このビヘイビアの固定を解除",
+  "Quick Select order": "クイック選択の並び順",
+  "Move up": "上へ移動",
+  "Move down": "下へ移動",
+  "No behaviors found": "一致するビヘイビアがありません",
+  "Edit the previous key": "前のキーを編集",
+  "Edit the next key": "次のキーを編集",
+  "Switch to dialog mode": "モーダルダイアログで編集",
+  "Switch to floating mode":
+    "キーマップを操作できるフローティングウィンドウで編集",
+  "Show or hide modifier keys": "修飾キーの選択欄を表示／非表示",
+  "Show or hide keycode search": "キーコードの検索欄を表示／非表示",
+  "Clear modifiers": "選択した修飾キーをすべて解除",
+  "Toggle {{modifier}}": "{{modifier}} の有効／無効を切り替え",
+  "Restore the binding shown when this editor opened":
+    "このキーの編集開始時の割り当てに戻す",
+  "Close without applying unfinished edits": "未確定の編集を適用せずに閉じる",
+  "Apply changes and close": "変更を適用して閉じる",
+  "Apply the binding after selecting its final parameter":
+    "最後のパラメーターを選択したら割り当てを適用",
+  "Select this behavior": "このビヘイビアを選択",
+  "Auto advance": "自動で次へ",
+  "Automatically select the next key": "選択後、自動で次のキーに移動",
+  "Dialog mode": "ダイアログモード",
+  "Floating mode": "フローティングモード",
+  "Previous key": "前のキー",
+  "Next key": "次のキー",
+  "Key {{position}} / {{count}}": "キー {{position}} / {{count}}",
   "DYA Studio for DYA & ZMK Keyboards":
     "DYA & ZMK キーボードのための DYA Studio",
   "The operation failed because the device is locked in ZMK Studio. Unlock the keyboard and try again.":
@@ -20,7 +68,7 @@ const ja: Record<string, string> = {
   Trackball: "トラックボール",
   BLE: "BLE",
   Settings: "設定",
-  Troubleshooting: "トラブルシューティング",
+  Troubleshooting: "診断",
   Subsystems: "サブシステム",
   Connected: "接続中",
   Disconnect: "切断",
@@ -29,6 +77,10 @@ const ja: Record<string, string> = {
   "Switch to light mode": "ライトモードに切り替え",
   "Switch to dark mode": "ダークモードに切り替え",
   Language: "言語",
+  "Display settings": "表示設定",
+  Theme: "テーマ",
+  Light: "ライト",
+  Dark: "ダーク",
   "Switch language": "言語を切り替え",
   Refresh: "更新",
   Cancel: "キャンセル",
@@ -79,6 +131,14 @@ const ja: Record<string, string> = {
     "次世代 DYA キーボード。60% 分割、標準的なロウスタッガード配列。",
   "Coming Soon": "近日公開",
   "Watch Booth": "Booth を見る",
+  "Bring your keyboard to DYA Studio":
+    "あなたのキーボードを DYA Studio に対応させる",
+  "Learn how to make your ZMK keyboard work with DYA Studio, from standard keymap support to custom features.":
+    "標準のキーマップ対応からカスタム機能まで、ZMK キーボードを DYA Studio に対応させる方法を紹介します。",
+  "Developer Guide": "開発者ガイド",
+  "Read the note article": "note 記事を読む",
+  "Latest Release": "最新リリース",
+  "View all release notes": "リリースノートをすべて見る",
   "Q: Can my keyboard support DYA Studio?":
     "Q: 自分のキーボードは DYA Studio に対応できますか？",
   "A: Yes, you can use the keymap feature without any modification with your ZMK keyboard.":
@@ -129,6 +189,12 @@ const ja: Record<string, string> = {
   "Are you sure you want to delete this layer?": "このレイヤーを削除しますか？",
   "Layer {{id}}": "レイヤー {{id}}",
   "Keymap layers": "キーマップのレイヤー",
+  "Keymap settings": "キーマップ設定",
+  "Layer editing": "レイヤー編集",
+  "Current layer": "現在のレイヤー",
+  "Layer actions": "レイヤー操作",
+  "Layout and display": "配列と表示",
+  "Stream mode": "ストリームモード",
   "Keyboard layout for {{layer}}": "{{layer}} のキーボード配列",
   "Key position {{position}}: {{binding}}":
     "キー位置 {{position}}: {{binding}}",
@@ -139,6 +205,7 @@ const ja: Record<string, string> = {
   Sort: "並び替え",
   "Move layer up (higher priority)": "レイヤーを上へ移動（優先度を上げる）",
   "Move layer down (lower priority)": "レイヤーを下へ移動（優先度を下げる）",
+  "Rename current layer": "現在のレイヤー名を変更",
   "Add new layer": "新しいレイヤーを追加",
   "Delete current layer": "現在のレイヤーを削除",
   "Restore deleted layer": "削除したレイヤーを復元",
@@ -146,6 +213,8 @@ const ja: Record<string, string> = {
     "削除したレイヤーを復元（{{count}} 件利用可能）",
   "Restore all deleted layers ({{count}})":
     "削除したレイヤーをすべて復元（{{count}} 件）",
+  "Other deleted layers": "その他の削除済みレイヤー",
+  "Other deleted layers ({{count}})": "その他（{{count}} 件）",
   "No deleted layers to restore": "復元できる削除済みレイヤーはありません",
   "Physical Layout": "物理レイアウト",
   "Layout {{id}}": "レイアウト {{id}}",
@@ -182,6 +251,11 @@ const ja: Record<string, string> = {
   "No pmw3610 driver settings were reported by the keyboard.":
     "キーボードから pmw3610 ドライバーの設定が報告されませんでした。",
   "Select Processor": "プロセッサーを選択",
+  Processor: "プロセッサー",
+  "PMW3610 Driver": "PMW3610 ドライバー",
+  "Select processor or PMW3610 driver":
+    "プロセッサーまたは PMW3610 ドライバーを選択",
+  "Reload PMW3610 drivers": "PMW3610 ドライバーを再読み込み",
   "{{count}} processors detected": "{{count}} 個のプロセッサーを検出",
   Processors: "プロセッサー",
   "Processor {{id}}": "プロセッサー {{id}}",
@@ -373,6 +447,9 @@ const ja: Record<string, string> = {
   "Connect your keyboard to edit runtime macros and combos":
     "ランタイムマクロとコンボを編集するにはキーボードを接続してください",
   "Select a macro or combo": "マクロまたはコンボを選択",
+  "Select macro, combo, or settings": "マクロ、コンボ、設定を選択",
+  "Create macro": "マクロを新規作成",
+  "New combo": "コンボを新規作成",
   "Choose an item from the lists on the left.":
     "左のリストから項目を選択してください。",
   "Edit runtime macro slots": "ランタイムマクロスロットを編集",
@@ -678,6 +755,7 @@ const ja: Record<string, string> = {
   Retry: "再試行",
 
   "Select Key Binding": "キー割り当てを選択",
+  "Select Keymap": "キーマップを選択",
   "Close on select": "選択時に閉じる",
   Revert: "元に戻す",
   Behavior: "ビヘイビア",
@@ -782,6 +860,7 @@ const ja: Record<string, string> = {
   "The value is saved in real-time upon selection for now.":
     "現在、値は選択時にリアルタイムで保存されます。",
   "Rotary Encoder": "ロータリーエンコーダー",
+  "Sensor {{id}}": "センサー {{id}}",
   "Counter-clockwise": "反時計回り",
   Clockwise: "時計回り",
   "Tap Time": "タップ時間",
@@ -1382,6 +1461,30 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Search behaviors...": "搜索行为...",
+  "Keep the selected behavior category": "保留所选行为类别",
+  "Reset the behavior category when reopening": "重新打开时重置行为类别",
+  "Keep selected category": "保留所选类别",
+  "Configure Quick Select": "配置快速选择",
+  "Quick Select settings": "快速选择设置",
+  "Reset Quick Select settings": "重置快速选择",
+  "Configure each quick-select item. Presets can be shown or hidden; other items can be pinned.":
+    "设置每个快速选择项目。预设行为可显示或隐藏，其他项目可固定。",
+  Preset: "预设",
+  "Show this preset behavior": "显示此预设行为",
+  "Hide this preset behavior": "隐藏此预设行为",
+  "Choose preset behaviors, pin visible items, and arrange the quick-select row.":
+    "选择预设行为、固定显示项目并排列快速选择栏。",
+  "Preset behaviors": "预设行为",
+  Shown: "显示",
+  Hidden: "隐藏",
+  "Visible quick selects": "显示的快速选择",
+  "Pin this behavior": "固定此行为",
+  "Unpin this behavior": "取消固定此行为",
+  "Quick Select order": "快速选择顺序",
+  "Move up": "上移",
+  "Move down": "下移",
+  "No behaviors found": "未找到行为",
   "DYA Studio for DYA & ZMK Keyboards": "面向 DYA 和 ZMK 键盘的 DYA Studio",
   "The operation failed because the device is locked in ZMK Studio. Unlock the keyboard and try again.":
     "操作失败，因为设备在 ZMK Studio 中处于锁定状态。请解锁键盘后重试。",
@@ -1401,6 +1504,10 @@ const zh: Record<string, string> = {
   "Switch to light mode": "切换到亮色模式",
   "Switch to dark mode": "切换到暗色模式",
   Language: "语言",
+  "Display settings": "显示设置",
+  Theme: "主题",
+  Light: "浅色",
+  Dark: "深色",
   "Switch language": "切换语言",
   Refresh: "刷新",
   Cancel: "取消",
@@ -1427,8 +1534,7 @@ const zh: Record<string, string> = {
   "DYA is pronounced dai-a.": "DYA 的发音是 dai-a（读作“迪亚”）。",
   "cormoran is pronounced cormoran [kˈɔɚm(ə)rən].":
     "cormoran 的发音是 cormoran [kˈɔɚm(ə)rən]（读作“科莫兰”）。",
-  "Features - What you can do with DYA Studio":
-    "功能 - DYA Studio 能做什么",
+  "Features - What you can do with DYA Studio": "功能 - DYA Studio 能做什么",
   "You can customize keymaps with a slightly easier UI, equivalent to ZMK Studio.":
     "使用更简洁的界面自定义键位，功能上等同于 ZMK Studio。",
   "You can configure trackball sensitivity, auto layer switching and various input processor settings.":
@@ -1442,8 +1548,7 @@ const zh: Record<string, string> = {
   "See also below Q&A section for more details.":
     "更多详情请参阅下方的 Q&A 部分。",
   "DYA Keyboard series": "DYA 键盘系列",
-  "40% Split keyboard for mobile use.":
-    "面向移动场景的 40% 分体式键盘。",
+  "40% Split keyboard for mobile use.": "面向移动场景的 40% 分体式键盘。",
   Design: "设计",
   Buy: "购买",
   Docs: "文档",
@@ -1451,6 +1556,13 @@ const zh: Record<string, string> = {
     "下一代 DYA 键盘，60% 分体式，标准行错位布局。",
   "Coming Soon": "即将推出",
   "Watch Booth": "查看 Booth",
+  "Bring your keyboard to DYA Studio": "让您的键盘支持 DYA Studio",
+  "Learn how to make your ZMK keyboard work with DYA Studio, from standard keymap support to custom features.":
+    "了解如何让您的 ZMK 键盘支持 DYA Studio，包括标准键位映射和自定义功能。",
+  "Developer Guide": "开发者指南",
+  "Read the note article": "阅读 note 文章",
+  "Latest Release": "最新版本",
+  "View all release notes": "查看所有发布说明",
   "Q: Can my keyboard support DYA Studio?":
     "Q: 我的键盘可以使用 DYA Studio 吗？",
   "A: Yes, you can use the keymap feature without any modification with your ZMK keyboard.":
@@ -1471,8 +1583,7 @@ const zh: Record<string, string> = {
   "Configure key bindings and layers": "配置按键绑定和层",
   "Unsaved changes": "有未保存的更改",
   Saved: "已保存",
-  "Saved — changed from the default keymap":
-    "已保存 — 与默认键位不同",
+  "Saved — changed from the default keymap": "已保存 — 与默认键位不同",
   Stream: "流模式",
   "Toggle stream mode": "切换流模式",
   "Discard unsaved changes and reload the keymap":
@@ -1487,24 +1598,25 @@ const zh: Record<string, string> = {
   "Reset to default": "重置为默认值",
   "Default keymap is not available": "默认键位不可用",
   Locked: "已锁定",
-  "Studio is locked — click to unlock":
-    "Studio 已锁定 — 点击解锁",
-  "Connect your keyboard to edit keymaps":
-    "连接键盘以编辑键位",
+  "Studio is locked — click to unlock": "Studio 已锁定 — 点击解锁",
+  "Connect your keyboard to edit keymaps": "连接键盘以编辑键位",
   "Loading keymap data...": "正在加载键位数据...",
   "Loading physical layouts...": "正在加载物理布局...",
   "Loading keymap...": "正在加载键位...",
   "Loading behaviors...": "正在加载行为...",
   "Finalizing...": "正在完成...",
-  "Are you sure you want to discard all changes?":
-    "确定要放弃所有更改吗？",
-  "Are you sure you want to delete this layer?":
-    "确定要删除此层吗？",
+  "Are you sure you want to discard all changes?": "确定要放弃所有更改吗？",
+  "Are you sure you want to delete this layer?": "确定要删除此层吗？",
   "Layer {{id}}": "层 {{id}}",
   "Keymap layers": "键位层",
+  "Keymap settings": "键位设置",
+  "Layer editing": "层编辑",
+  "Current layer": "当前层",
+  "Layer actions": "层操作",
+  "Layout and display": "布局与显示",
+  "Stream mode": "流模式",
   "Keyboard layout for {{layer}}": "{{layer}} 的键盘布局",
-  "Key position {{position}}: {{binding}}":
-    "键位 {{position}}：{{binding}}",
+  "Key position {{position}}: {{binding}}": "键位 {{position}}：{{binding}}",
   "Reset key position {{position}} to original":
     "将键位 {{position}} 重置为原始值",
   "Reset key position {{position}} to default":
@@ -1512,6 +1624,7 @@ const zh: Record<string, string> = {
   Sort: "排序",
   "Move layer up (higher priority)": "将层上移（更高优先级）",
   "Move layer down (lower priority)": "将层下移（更低优先级）",
+  "Rename current layer": "重命名当前层",
   "Add new layer": "添加新层",
   "Delete current layer": "删除当前层",
   "Restore deleted layer": "恢复已删除的层",
@@ -1519,6 +1632,8 @@ const zh: Record<string, string> = {
     "恢复已删除的层（可用 {{count}} 个）",
   "Restore all deleted layers ({{count}})":
     "恢复所有已删除的层（{{count}} 个）",
+  "Other deleted layers": "其他已删除的层",
+  "Other deleted layers ({{count}})": "其他（{{count}} 个）",
   "No deleted layers to restore": "没有可恢复的已删除层",
   "Physical Layout": "物理布局",
   "Layout {{id}}": "布局 {{id}}",
@@ -1555,33 +1670,32 @@ const zh: Record<string, string> = {
   "No pmw3610 driver settings were reported by the keyboard.":
     "键盘未报告任何 pmw3610 驱动设置。",
   "Select Processor": "选择处理器",
+  Processor: "处理器",
+  "PMW3610 Driver": "PMW3610 驱动",
+  "Select processor or PMW3610 driver": "选择处理器或 PMW3610 驱动",
+  "Reload PMW3610 drivers": "重新加载 PMW3610 驱动",
   "{{count}} processors detected": "检测到 {{count}} 个处理器",
   Processors: "处理器",
   "Processor {{id}}": "处理器 {{id}}",
   "No processors found": "未找到处理器",
   "Loading...": "加载中...",
   "PMW3610 Drivers": "PMW3610 驱动",
-  "This driver is no longer available.":
-    "此驱动已不可用。",
+  "This driver is no longer available.": "此驱动已不可用。",
   "Active on layer": "在层上激活",
   "Temp layer": "临时层",
   "{{layer}} — active": "{{layer}} — 已激活",
   "{{layer}} — inactive": "{{layer}} — 未激活",
   "{{layer}} — temporary layer target": "{{layer}} — 临时层目标",
   "Active on Layers": "激活的层",
-  "Configure which layers this processor is active on":
-    "配置此处理器激活的层",
-  "Processor is active on all layers":
-    "处理器在所有层上都处于激活状态",
+  "Configure which layers this processor is active on": "配置此处理器激活的层",
+  "Processor is active on all layers": "处理器在所有层上都处于激活状态",
   "Loading layers...": "正在加载层...",
   Scaling: "缩放",
-  "Adjust sensitivity from 0.01x to 10x":
-    "在 0.01 倍到 10 倍之间调整灵敏度",
+  "Adjust sensitivity from 0.01x to 10x": "在 0.01 倍到 10 倍之间调整灵敏度",
   "Decrease scaling": "降低缩放",
   "Increase scaling": "提高缩放",
   "Sensor Rotation": "传感器旋转",
-  "Rotate input for different mounting angles":
-    "针对不同的安装角度旋转输入",
+  "Rotate input for different mounting angles": "针对不同的安装角度旋转输入",
   "Decrease rotation": "减小旋转",
   "Increase rotation": "增大旋转",
   "Axis Snapping": "轴吸附",
@@ -1591,13 +1705,11 @@ const zh: Record<string, string> = {
   "Y Axis (Vertical)": "Y 轴（垂直）",
   "X Axis (Horizontal)": "X 轴（水平）",
   "Snap Threshold": "吸附阈值",
-  "Threshold for unsnapping from the locked axis":
-    "从锁定轴解除吸附的阈值",
+  "Threshold for unsnapping from the locked axis": "从锁定轴解除吸附的阈值",
   "Snap Timeout": "吸附超时",
   "Time window for threshold check": "阈值检查的时间窗口",
   "Axis Inversion": "轴反转",
-  "Reverse the direction of X or Y axis movement":
-    "反转 X 轴或 Y 轴的移动方向",
+  "Reverse the direction of X or Y axis movement": "反转 X 轴或 Y 轴的移动方向",
   "Invert X Axis": "反转 X 轴",
   "Reverse horizontal movement direction": "反转水平移动方向",
   "Invert Y Axis": "反转 Y 轴",
@@ -1611,8 +1723,7 @@ const zh: Record<string, string> = {
   "XY-Swap": "XY 交换",
   "Swap X and Y axes": "交换 X 轴和 Y 轴",
   "Temporary Layer": "临时层",
-  "Auto-activate layer when trackball is in use":
-    "使用轨迹球时自动激活层",
+  "Auto-activate layer when trackball is in use": "使用轨迹球时自动激活层",
   "Target Layer": "目标层",
   "Activation Delay": "激活延迟",
   "Delay before activating layer when trackball moves":
@@ -1622,8 +1733,7 @@ const zh: Record<string, string> = {
     "轨迹球停止后到停用层的延迟",
 
   "BLE Connections": "BLE 连接",
-  "Manage Bluetooth upstream connections":
-    "管理蓝牙上行连接",
+  "Manage Bluetooth upstream connections": "管理蓝牙上行连接",
   "Refresh profiles": "刷新配置文件",
   "BLE management subsystem is not available for your keyboard.":
     "您的键盘不支持 BLE 管理子系统。",
@@ -1639,8 +1749,7 @@ const zh: Record<string, string> = {
   Unpair: "取消配对",
   Switch: "切换",
   Active: "已激活",
-  "Are you sure you want to unpair this device?":
-    "确定要取消配对此设备吗？",
+  "Are you sure you want to unpair this device?": "确定要取消配对此设备吗？",
   "Change Output Priority?": "更改输出优先级？",
   "Changing the output priority may disconnect DYA Studio from your keyboard.":
     "更改输出优先级可能会断开 DYA Studio 与键盘的连接。",
@@ -1699,8 +1808,7 @@ const zh: Record<string, string> = {
   "Loading settings...": "正在加载设置...",
   "Power Management": "电源管理",
   "Idle Timeout": "空闲超时",
-  "Time before keyboard enters idle mode":
-    "键盘进入空闲模式前的时间",
+  "Time before keyboard enters idle mode": "键盘进入空闲模式前的时间",
   "Sleep Timeout": "睡眠超时",
   "Time before entering deep sleep": "进入深度睡眠前的时间",
   "Apply to All Devices": "应用到所有设备",
@@ -1739,13 +1847,15 @@ const zh: Record<string, string> = {
   ms: "毫秒",
 
   "Macro&Combo": "宏与组合键",
-  "Edit runtime macro and combo slots":
-    "编辑运行时宏和组合键插槽",
+  "Edit runtime macro and combo slots": "编辑运行时宏和组合键插槽",
   "Macro Global Settings": "宏的全局设置",
   "Combo Global Settings": "组合键的全局设置",
   "Connect your keyboard to edit runtime macros and combos":
     "连接键盘以编辑运行时宏和组合键",
   "Select a macro or combo": "选择宏或组合键",
+  "Select macro, combo, or settings": "选择宏、组合键或设置",
+  "Create macro": "新建宏",
+  "New combo": "新建组合键",
   "Choose an item from the lists on the left.":
     "请从左侧的列表中选择一个项目。",
   "Edit runtime macro slots": "编辑运行时宏插槽",
@@ -1776,20 +1886,16 @@ const zh: Record<string, string> = {
   "Remove step {{n}}": "删除步骤 {{n}}",
   "Select a macro slot": "选择宏插槽",
   "Select a macro": "请选择宏",
-  "No macros yet. Create one below.":
-    "还没有宏。请在下方创建一个。",
-  "No macros yet. Create one to get started.":
-    "还没有宏。创建一个开始吧。",
+  "No macros yet. Create one below.": "还没有宏。请在下方创建一个。",
+  "No macros yet. Create one to get started.": "还没有宏。创建一个开始吧。",
   "New macro name": "新宏名称",
   Create: "创建",
-  "Shared macro pool: {{used}}/{{total}} B":
-    "共享宏池：{{used}}/{{total}} B",
+  "Shared macro pool: {{used}}/{{total}} B": "共享宏池：{{used}}/{{total}} B",
 
   "Configure runtime combo slots": "配置运行时组合键插槽",
   "All layers": "所有层",
   "Choose a valid slot.": "请选择有效的插槽。",
-  "Slot must be below {{maxCombo}}.":
-    "插槽必须小于 {{maxCombo}}。",
+  "Slot must be below {{maxCombo}}.": "插槽必须小于 {{maxCombo}}。",
   "Name must be {{maxLength}} characters or fewer.":
     "名称最多 {{maxLength}} 个字符。",
   "Select at least two key positions.": "请至少选择两个键位。",
@@ -1806,8 +1912,7 @@ const zh: Record<string, string> = {
   "Discarded {{count}} runtime combo changes.":
     "已放弃 {{count}} 项运行时组合键更改。",
   "● Pending changes": "● 待处理的更改",
-  "Connect your keyboard to edit runtime combos":
-    "连接键盘以编辑运行时组合键",
+  "Connect your keyboard to edit runtime combos": "连接键盘以编辑运行时组合键",
   "Runtime combo subsystem is not available for your keyboard.":
     "您的键盘不支持运行时组合键子系统。",
   "is required in firmware.": "必须在固件中启用。",
@@ -1833,10 +1938,8 @@ const zh: Record<string, string> = {
   Default: "默认",
   Overridden: "已覆盖",
   "Reset to Default": "重置为默认值",
-  "Combo reset to default is pending.":
-    "组合键重置为默认值待处理。",
-  "Timeout ms (0 = inherit global)":
-    "超时（毫秒）（0 = 继承全局）",
+  "Combo reset to default is pending.": "组合键重置为默认值待处理。",
+  "Timeout ms (0 = inherit global)": "超时（毫秒）（0 = 继承全局）",
   "Require prior idle ms (0 = inherit global)":
     "需要预先空闲（毫秒）（0 = 继承全局）",
   "Require prior idle ms (0 disables)": "需要预先空闲（毫秒）（0 表示禁用）",
@@ -1857,8 +1960,7 @@ const zh: Record<string, string> = {
   "Length: {{count}} bytes": "长度：{{count}} 字节",
   "Invalid hex": "无效的十六进制",
   "Invalid bytes": "无效的字节",
-  "Value is hidden by firmware permissions":
-    "固件权限隐藏了该值",
+  "Value is hidden by firmware permissions": "固件权限隐藏了该值",
   "(empty)": "（空）",
   "Edit bytecode": "编辑字节码",
   Unsaved: "未保存",
@@ -1869,8 +1971,7 @@ const zh: Record<string, string> = {
   "Discard item changes": "放弃项目更改",
   "Reset item to default": "将项目重置为默认值",
   "Changed from default": "已偏离默认值",
-  "Reset this macro to its default?":
-    "将此宏重置为其默认值？",
+  "Reset this macro to its default?": "将此宏重置为其默认值？",
   "Reset this macro to its default": "将此宏重置为其默认值",
   Legend: "图例",
   "Green: in memory, not yet saved. Discard reverts it.":
@@ -1893,8 +1994,7 @@ const zh: Record<string, string> = {
     "键盘未报告任何高级设置。",
   "{{count}} settings": "{{count}} 项设置",
   " - loading layer and behavior names": "（正在加载层和行为名称）",
-  "Reset all settings in {{identifier}}?":
-    "重置 {{identifier}} 中的所有设置？",
+  "Reset all settings in {{identifier}}?": "重置 {{identifier}} 中的所有设置？",
   Setting: "设置",
   Source: "来源",
   Editor: "编辑器",
@@ -1911,23 +2011,20 @@ const zh: Record<string, string> = {
     "全部：所有分体侧同时，用于整节操作。",
   "Saving…": "保存中…",
   "Default:": "默认值：",
-  "Click to restore the default value.":
-    "点击恢复默认值。",
+  "Click to restore the default value.": "点击恢复默认值。",
   "What Status means": "“状态”的含义",
   "Status legend": "状态图例",
   "Current: matches the value persisted on the keyboard.":
     "当前值：与键盘上保存的值一致。",
   "In memory: written to RAM; save the section to persist it.":
     "内存中：已写入 RAM；请保存该节以使其持久化。",
-  "Queued: your edit is about to be sent.":
-    "排队中：您的修改即将发送。",
+  "Queued: your edit is about to be sent.": "排队中：您的修改即将发送。",
   "Memory...: the edit is being written right now.":
     "内存中...：修改正在写入。",
   Sensitivity: "灵敏度",
   "Tracking resolution.": "跟踪分辨率。",
   Orientation: "方向",
-  "Axis mapping for how the sensor is mounted.":
-    "传感器安装方向对应的轴映射。",
+  "Axis mapping for how the sensor is mounted.": "传感器安装方向对应的轴映射。",
   "Power & Rest Mode": "省电与休眠模式",
   "Idle downshift stages that reduce sensor polling and power use while the trackball is not moving.":
     "在轨迹球静止时降低传感器轮询频率和功耗的空闲降级阶段。",
@@ -1949,21 +2046,17 @@ const zh: Record<string, string> = {
     "在 Rest1 中停留的时间，之后降级到 Rest2。",
   "Time in Rest2 before dropping into Rest3.":
     "在 Rest2 中停留的时间，之后降级到 Rest3。",
-  "Sensor sampling interval while in Rest1.":
-    "Rest1 阶段的传感器采样间隔。",
-  "Sensor sampling interval while in Rest2.":
-    "Rest2 阶段的传感器采样间隔。",
+  "Sensor sampling interval while in Rest1.": "Rest1 阶段的传感器采样间隔。",
+  "Sensor sampling interval while in Rest2.": "Rest2 阶段的传感器采样间隔。",
   "Sensor sampling interval while in Rest3, the deepest idle stage.":
     "Rest3（最深的空闲阶段）阶段的传感器采样间隔。",
   "Minimum time between motion reports sent to the host.":
     "向主机发送运动报告的最小时间间隔。",
   "Subsystem {{index}}": "子系统 {{index}}",
-  "Custom settings subsystem is not available":
-    "自定义设置子系统不可用",
+  "Custom settings subsystem is not available": "自定义设置子系统不可用",
   "Empty custom settings response": "自定义设置响应为空",
   "Custom settings failed": "自定义设置处理失败",
-  "Custom settings list timed out":
-    "自定义设置列表获取超时",
+  "Custom settings list timed out": "自定义设置列表获取超时",
   "Failed to load custom settings": "加载自定义设置失败",
   "Failed to write custom setting": "写入自定义设置失败",
   "Failed to save settings": "保存设置失败",
@@ -1983,8 +2076,7 @@ const zh: Record<string, string> = {
   "Trust this URL and don't warn me again": "信任此 URL 并今后不再警告",
   "Subsystem index: {{index}}": "子系统索引：{{index}}",
   "Web UI": "网页界面",
-  "No web UI available for this subsystem.":
-    "此子系统没有可用的网页界面。",
+  "No web UI available for this subsystem.": "此子系统没有可用的网页界面。",
   "No custom subsystems available. Custom subsystems are provided by the keyboard firmware.":
     "没有可用的自定义子系统。自定义子系统由键盘固件提供。",
   "All custom subsystems reported by this device are already supported by DYA Studio.":
@@ -2013,8 +2105,7 @@ const zh: Record<string, string> = {
   Back: "返回",
   Upcoming: "即将发布",
   "No upcoming changes yet.": "暂无即将发布的更改。",
-  "No changes recorded for this release.":
-    "本次发布没有记录任何更改。",
+  "No changes recorded for this release.": "本次发布没有记录任何更改。",
   Major: "主要",
   Minor: "次要",
   Patch: "补丁",
@@ -2022,12 +2113,10 @@ const zh: Record<string, string> = {
   "Data Collection Notice": "数据收集说明",
   "DYA Studio collects your keyboard name and anonymous usage data — such as which features you use, how you connect, and connection errors — for usage analysis. No keymaps, settings, or other keyboard configuration data is ever sent; everything is handled locally on your device.":
     "DYA Studio 收集您的键盘名称和匿名使用数据（例如您使用的功能、连接方式以及连接错误）以进行使用分析。绝不会发送键位、设置或其他键盘配置数据；所有内容都在您的设备上本地处理。",
-  "BLE Not Supported on your Browser":
-    "您的浏览器不支持 BLE",
+  "BLE Not Supported on your Browser": "您的浏览器不支持 BLE",
   "Your browser does not support Web Bluetooth API. Please use a compatible browser like Chrome, Edge, or Bluefy (iOS). BLE device discovery on non-Linux system requires cormoran's ZMK fork + press the studio unlock key on your keyboard.":
     "您的浏览器不支持 Web Bluetooth API。请使用兼容的浏览器，例如 Chrome、Edge 或 Bluefy (iOS)。在非 Linux 系统上进行 BLE 设备发现需要 cormoran 的 ZMK 分支，并在键盘上按下 studio unlock 按键。",
-  "Serial Not Supported on your Browser":
-    "您的浏览器不支持串行连接",
+  "Serial Not Supported on your Browser": "您的浏览器不支持串行连接",
   "Your browser does not support Web Serial API. Please use a compatible browser. Note that web serial is not available on mobile devices.":
     "您的浏览器不支持 Web Serial API。请使用兼容的浏览器。请注意，移动设备不支持 Web Serial。",
   "How to Discover your Keyboard via BLE": "如何通过 BLE 发现您的键盘",
@@ -2051,11 +2140,11 @@ const zh: Record<string, string> = {
   Retry: "重试",
 
   "Select Key Binding": "选择按键绑定",
+  "Select Keymap": "选择键位映射",
   "Close on select": "选择后关闭",
   Revert: "还原",
   Behavior: "行为",
-  "Behaviors not loaded from keyboard.":
-    "未能从键盘加载行为。",
+  "Behaviors not loaded from keyboard.": "未能从键盘加载行为。",
   Parameters: "参数",
   param1: "参数1",
   param2: "参数2",
@@ -2095,8 +2184,7 @@ const zh: Record<string, string> = {
   "A sticky layer stays pressed until another key is pressed":
     "粘滞层在按下其他键之前保持激活",
   "Caps lock, but automatically deactivates": "大写锁定，但自动取消激活",
-  "Repeat last-pressed key while held":
-    "按住时重复最后一次按下的键",
+  "Repeat last-pressed key while held": "按住时重复最后一次按下的键",
   "Mouse key press": "鼠标按键",
   "Move mouse cursor.": "移动鼠标光标。",
   "Scroll mouse wheel.": "滚动鼠标滚轮。",
@@ -2129,8 +2217,7 @@ const zh: Record<string, string> = {
   "Max ({{max}})": "最大值（{{max}}）",
   "Quick Presets (default: ±{{defaultValue}})":
     "快速预设（默认：±{{defaultValue}}）",
-  "Custom Values (range: -32768 to 32767)":
-    "自定义值（范围：-32768 到 32767）",
+  "Custom Values (range: -32768 to 32767)": "自定义值（范围：-32768 到 32767）",
   "X-axis (Horizontal)": "X 轴（水平）",
   "Y-axis (Vertical)": "Y 轴（垂直）",
   "- = Left, + = Right": "- = 左，+ = 右",
@@ -2155,6 +2242,7 @@ const zh: Record<string, string> = {
   "The value is saved in real-time upon selection for now.":
     "目前，选中后值会实时保存。",
   "Rotary Encoder": "旋转编码器",
+  "Sensor {{id}}": "传感器 {{id}}",
   "Counter-clockwise": "逆时针",
   Clockwise: "顺时针",
   "Tap Time": "点击时间",
@@ -2222,8 +2310,7 @@ const zh: Record<string, string> = {
   "{{count}} devices not ready": "{{count}} 个设备未就绪",
 
   "Stability (Watchdog)": "稳定性（看门狗）",
-  "Freeze, crash and unexpected reset incidents":
-    "冻结、崩溃和意外重置事件",
+  "Freeze, crash and unexpected reset incidents": "冻结、崩溃和意外重置事件",
   "Refresh incidents": "刷新事件",
   Central: "中央侧",
   "Peripheral {{n}}": "外围侧 {{n}}",
@@ -2253,8 +2340,7 @@ const zh: Record<string, string> = {
   "Unknown fault": "未知故障",
 
   // ELF analysis
-  "Upload ELF to resolve PC/LR symbols":
-    "上传 ELF 以解析 PC/LR 符号",
+  "Upload ELF to resolve PC/LR symbols": "上传 ELF 以解析 PC/LR 符号",
   "Upload ELF": "上传 ELF",
   "Change ELF": "更换 ELF",
   "Remove ELF": "移除 ELF",
@@ -2283,8 +2369,7 @@ const zh: Record<string, string> = {
   // Fatal crash reason codes (Zephyr k_fatal_error_reason + ARM arch codes)
   "CPU exception": "CPU 异常",
   "Spurious interrupt": "伪中断",
-  "Stack overflow (corruption detected)":
-    "栈溢出（检测到损坏）",
+  "Stack overflow (corruption detected)": "栈溢出（检测到损坏）",
   "Kernel oops": "内核 Oops",
   "Kernel panic": "内核 Panic",
   "Memory fault": "内存错误",
@@ -2329,8 +2414,7 @@ const zh: Record<string, string> = {
   "Unsupported exclusive access fault": "不支持的独占访问错误",
 
   "Key Switches": "按键开关",
-  "Key press statistics and chatter detection":
-    "按键统计与抖动检测",
+  "Key press statistics and chatter detection": "按键统计与抖动检测",
   "Refresh key switch statistics": "刷新按键统计",
   Devices: "设备数",
   Statistics: "统计",
@@ -2338,8 +2422,7 @@ const zh: Record<string, string> = {
   "Total presses": "总按压次数",
   "debounce {{press}}/{{release}}ms": "消抖 {{press}}/{{release}} 毫秒",
   "poll {{ms}}ms": "轮询 {{ms}} 毫秒",
-  "No chatter or anomalies detected.":
-    "未检测到抖动或异常。",
+  "No chatter or anomalies detected.": "未检测到抖动或异常。",
   "Suspect keys (possible chatter or stuck switch) — position numbers follow the keymap order.":
     "可疑按键（可能存在抖动或卡键）— 位置编号遵循键位顺序。",
   Position: "位置",
@@ -2360,8 +2443,7 @@ const zh: Record<string, string> = {
   Untested: "未测试",
   "No record (0 presses)": "无记录（0 次按压）",
   "Suspect (chatter or mismatch)": "可疑（抖动或不匹配）",
-  "No wiring info (split peripheral half)":
-    "无布线信息（分体的外围侧）",
+  "No wiring info (split peripheral half)": "无布线信息（分体的外围侧）",
   "Wiring info unavailable (split peripheral half)":
     "布线信息不可用（分体的外围侧）",
   "Position {{position}}": "位置 {{position}}",
@@ -2435,8 +2517,7 @@ const zh: Record<string, string> = {
   "In DYA Studio": "在 DYA Studio 中",
   "Create and edit the action sequence of each macro":
     "创建和编辑每个宏的动作序列",
-  "Bind a macro to a key from the Keymap tab":
-    "在“键位”选项卡中将宏绑定到按键",
+  "Bind a macro to a key from the Keymap tab": "在“键位”选项卡中将宏绑定到按键",
   "Tune global timing such as wait and tap time":
     "调整等待时间和点击时间等全局时间",
 
@@ -2462,8 +2543,7 @@ const zh: Record<string, string> = {
     "在移动光标和滚动之间切换轨迹球",
   "Adjust sensitivity, or swap and invert the axes":
     "调整灵敏度，或交换和反转轴",
-  "Choose which layers each processor is active on":
-    "为每个处理器选择激活的层",
+  "Choose which layers each processor is active on": "为每个处理器选择激活的层",
   "Optionally hold a temporary layer while the trackball moves":
     "在轨迹球移动时可选地保持一个临时层",
 
@@ -2488,8 +2568,7 @@ const zh: Record<string, string> = {
   "Typical settings": "典型设置",
   "CPI / sensitivity of the sensor": "传感器的 CPI / 灵敏度",
   "Orientation, axis rotation, and inversion": "方向、轴旋转和反转",
-  "Polling rate and sleep / power behavior":
-    "轮询频率和睡眠 / 电源行为",
+  "Polling rate and sleep / power behavior": "轮询频率和睡眠 / 电源行为",
   Note: "备注",
   "These values are read from and written to your keyboard's firmware. Change them in small steps.":
     "这些值从键盘的固件中读取和写入。请逐步小幅调整。",
@@ -2517,8 +2596,7 @@ const zh: Record<string, string> = {
   "Restore this version?": "恢复此版本？",
   "Saved {{timestamp}}. The values below are written to keyboard memory — press Save afterwards to store them permanently.":
     "保存于 {{timestamp}}。以下值会写入键盘内存 — 然后按“保存”以永久存储。",
-  "Reading the current state from the keyboard...":
-    "正在从键盘读取当前状态...",
+  "Reading the current state from the keyboard...": "正在从键盘读取当前状态...",
   "This version matches the current state — nothing to write.":
     "此版本与当前状态一致 — 无需写入。",
   "Write to keyboard": "写入键盘",
@@ -2572,8 +2650,7 @@ const zh: Record<string, string> = {
   "Import/Export": "导入/导出",
   "Sync keymaps with Keyboard Abyss": "与 Keyboard Abyss 同步键位",
   "Keyboard Abyss": "Keyboard Abyss",
-  "Sign in to import and export keymaps.":
-    "登录后可导入和导出键位。",
+  "Sign in to import and export keymaps.": "登录后可导入和导出键位。",
   "Sign in with Abyss": "使用 Abyss 登录",
   "Sign out": "退出登录",
   "A sign-in window opens at {{host}}. Your session lasts until this tab is closed.":
@@ -2584,8 +2661,7 @@ const zh: Record<string, string> = {
     "将已连接键盘的键位上传到 Abyss，可以作为新键位或现有键位的新版本。",
   "Pick a compatible keymap from Abyss, review what would change, and write it to the connected keyboard.":
     "从 Abyss 选择兼容的键位，检查将要更改的内容，然后写入已连接的键盘。",
-  "Not available yet — this is still being built.":
-    "尚不可用 — 仍在开发中。",
+  "Not available yet — this is still being built.": "尚不可用 — 仍在开发中。",
 
   // Import/Export — device snapshot
   "Keyboard snapshot": "键盘快照",
@@ -2599,8 +2675,7 @@ const zh: Record<string, string> = {
   "Matching the layout on Abyss...": "正在与 Abyss 上的布局匹配...",
   Keys: "按键数",
   Modules: "模块",
-  "Matched the Abyss layout {{layout}}.":
-    "已匹配到 Abyss 布局 {{layout}}。",
+  "Matched the Abyss layout {{layout}}.": "已匹配到 Abyss 布局 {{layout}}。",
   "No exact layout match. Exporting will add a new variation of {{layout}}.":
     "没有完全匹配的布局。导出将添加 {{layout}} 的新变体。",
   "This layout is not registered on Abyss yet. Exporting will add it.":
@@ -2609,8 +2684,7 @@ const zh: Record<string, string> = {
     "此键盘尚未在 Abyss 上注册。导出时将在您的账户下创建。",
 
   // Import/Export — export section
-  "Read the keyboard first to enable exporting.":
-    "请先读取键盘以启用导出。",
+  "Read the keyboard first to enable exporting.": "请先读取键盘以启用导出。",
   "Exporting uploads this keymap to {{host}} under your account.":
     "导出将把此键位上传到您在 {{host}} 的账户下。",
   Destination: "目标",
@@ -2621,8 +2695,7 @@ const zh: Record<string, string> = {
   "Keymap name": "键位名称",
   "Keymap to update": "要更新的键位",
   "Loading your keymaps...": "正在加载您的键位...",
-  "No keymaps found for this keyboard":
-    "未找到此键盘的键位",
+  "No keymaps found for this keyboard": "未找到此键盘的键位",
   "Select a keymap": "选择键位",
   "Saved to Abyss as version {{version}}.":
     "已作为版本 {{version}} 保存到 Abyss。",
@@ -2640,10 +2713,8 @@ const zh: Record<string, string> = {
 
   // Import/Export — visual diff preview
   "Key {{index}}": "键位 {{index}}",
-  "No layout geometry available for a preview.":
-    "没有可用于预览的布局信息。",
-  "This layer does not exist in the selected keymap.":
-    "所选键位中不存在此层。",
+  "No layout geometry available for a preview.": "没有可用于预览的布局信息。",
+  "This layer does not exist in the selected keymap.": "所选键位中不存在此层。",
   "No keys": "无按键",
   "Unnamed macro": "未命名的宏",
   "No steps": "无步骤",
@@ -2676,16 +2747,13 @@ const zh: Record<string, string> = {
     "此键盘尚未在 Abyss 上注册。请先在 Abyss 上注册，以便导出内容能进入目录。",
 
   // Import/Export — import section
-  "Read the keyboard first to enable importing.":
-    "请先读取键盘以启用导入。",
+  "Read the keyboard first to enable importing.": "请先读取键盘以启用导入。",
   "Writing changes the keyboard. Review the changes before confirming.":
     "写入会更改键盘内容。请在确认前查看更改。",
   "Keymap to write": "要写入的键位",
-  "No compatible keymaps found for this keyboard":
-    "未找到与此键盘兼容的键位",
+  "No compatible keymaps found for this keyboard": "未找到与此键盘兼容的键位",
   "Loading the keymap...": "正在加载键位...",
-  "The keyboard already matches this keymap.":
-    "键盘已与此键位一致。",
+  "The keyboard already matches this keymap.": "键盘已与此键位一致。",
   "Written to the keyboard and re-read to confirm.":
     "已写入键盘并重新读取以确认。",
   "Write {{count}} changes to the keyboard? This replaces the current settings and cannot be undone.":
@@ -2727,8 +2795,7 @@ const zh: Record<string, string> = {
     "您的 Abyss 会话已过期。请重新登录。",
   "Your Abyss account does not have permission for this action.":
     "您的 Abyss 账户无权执行此操作。",
-  "This keymap no longer exists on Abyss.":
-    "此键位在 Abyss 上已不存在。",
+  "This keymap no longer exists on Abyss.": "此键位在 Abyss 上已不存在。",
   "Abyss rejected this keymap. It may not match the connected keyboard.":
     "Abyss 拒绝了此键位。它可能与已连接的键盘不匹配。",
   "Too many requests to Abyss. Please wait a moment and try again.":
@@ -2742,10 +2809,8 @@ const zh: Record<string, string> = {
   "Abyss login was cancelled.": "Abyss 登录已取消。",
   "Abyss sign-in could not be completed. Please start again from the Import/Export tab.":
     "无法完成 Abyss 登录。请从导入/导出选项卡重新开始。",
-  "Something went wrong talking to Abyss.":
-    "与 Abyss 通信时出现问题。",
-  "Abyss is not configured for this build.":
-    "此构建未配置 Abyss。",
+  "Something went wrong talking to Abyss.": "与 Abyss 通信时出现问题。",
+  "Abyss is not configured for this build.": "此构建未配置 Abyss。",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = {

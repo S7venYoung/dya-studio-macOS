@@ -13,17 +13,31 @@ never set it by hand.
 
 ## How a release happens
 
-The **Release DYA Studio** workflow (`.github/workflows/release.yml`) is run
+Start the **Release DYA Studio** workflow (`.github/workflows/release.yml`)
 manually (`workflow_dispatch`). It:
 
 1. Runs `node scripts/release.ts`, which resolves the next `YYYY.MM.DD.N` from
    today's date and existing git tags, then rewrites
    `src/i18n/releaseNotes.json`: the `upcoming` section becomes that version
    (dated today) and a fresh empty `upcoming` is prepended.
-2. Commits that change to `main`, tags it `vYYYY.MM.DD.N`, and pushes.
-3. Builds and deploys to Cloudflare Pages.
-4. Creates a GitHub Release whose body links to the matching section of the
+2. Pushes the change to a temporary `release/run-<workflow run id>` branch and
+   opens a draft pull request to `main`. Repository Actions settings must allow
+   GitHub Actions to create pull requests.
+3. A maintainer marks the pull request ready for review. This human action
+   starts the normal pull-request `Test and Build Web UI` workflow; wait for the
+   required `build` check, review the promoted notes, and merge the pull
+   request. This keeps the release subject to the same branch rules as every
+   other change to `main`.
+4. The merged release pull request starts the publish job, which builds and
+   deploys the merged commit to Cloudflare Pages, then tags it
+   `vYYYY.MM.DD.N`.
+5. Creates a GitHub Release whose body links to the matching section of the
    release notes page (`/release-notes#YYYY.MM.DD.N`).
+
+The temporary branch is retained until publishing succeeds. Before the pull
+request is merged, rerun the original preparation run rather than starting a
+new dispatch to resume the same version and pull request. If publishing fails,
+rerun its failed job from the merged pull request's workflow run.
 
 The version-resolution and JSON-rewrite logic lives in
 `src/lib/releaseVersioning.ts` and is unit-tested
@@ -91,15 +105,13 @@ bumps with no user-visible effect) do **not** need an entry.
 
 ## Classifying a change: major / minor / patch
 
-Put each entry under the category that matches its user impact:
+Put each entry under the category that matches its primary user impact:
 
-- **major** — new capability or a significant, visible change to how the app
-  works: a new tab/page, a new editor, a redesign, a new integration, or
-  anything that changes existing behavior in a way users must notice.
-- **minor** — a new but self-contained enhancement to existing functionality:
-  an added option, a new control, a quality-of-life improvement, a performance
-  win users can feel.
-- **patch** — bug fixes, small polish, copy/wording updates, and other
-  corrections that don't add functionality.
+- **major** — a new feature, a behavior change or meaningful behavior
+  improvement, or a breaking change.
+- **minor** — visual refinement or a small behavior change.
+- **patch** — an internal, non-visible change, a small wording improvement, or
+  another similarly small correction worth communicating.
 
-When in doubt, pick the lower category (a fix is a `patch`, not a `minor`).
+When a change spans categories, use the category that best represents the
+outcome users experience rather than the implementation's size.

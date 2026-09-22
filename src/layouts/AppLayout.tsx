@@ -5,6 +5,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useLanguage } from "../hooks/useLanguage";
 import type { ConnectionMethod } from "../components/DeviceConnection";
 import { LanguageToggle } from "../components/LanguageToggle";
+import { MobileDisplaySettings } from "../components/MobileDisplaySettings";
 import { BUILD_LABEL } from "../lib/viteEnv";
 
 interface AppLayoutProps {
@@ -28,9 +29,9 @@ export function AppLayout({
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-dark">
+    <div className="app-layout flex h-dvh flex-col bg-gradient-dark">
       {/* Header */}
-      <header className="relative flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
+      <header className="relative flex shrink-0 items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-sm transition-colors duration-300">
         {BUILD_LABEL && (
           <span
             className="absolute left-2 top-0 z-10 rounded-b-md border border-t-0 border-[var(--color-warning)] bg-[var(--color-warning)] px-2 py-1 text-[10px] font-semibold leading-none tracking-widest text-[var(--color-surface)] uppercase shadow-sm"
@@ -53,18 +54,22 @@ export function AppLayout({
         </div>
 
         {/* Connection Status & Theme Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           {isConnected ? (
             <>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="status-indicator connected flex-shrink-0" />
-                <span className="text-sm text-[var(--color-text-secondary)]">
+                <span
+                  className="truncate text-sm text-[var(--color-text-secondary)]"
+                  title={deviceName}
+                >
                   {deviceName || t("Connected")}
                 </span>
               </div>
               <button
                 onClick={onDisconnect}
-                className="btn-ghost text-sm flex items-center gap-1.5"
+                aria-label={t("Disconnect")}
+                className="btn-ghost text-sm flex shrink-0 items-center gap-1.5"
               >
                 <IconPlugConnectedX size={18} />
                 <span className="hidden tablet:inline">{t("Disconnect")}</span>
@@ -86,24 +91,35 @@ export function AppLayout({
               )}
             </button>
           )}
-          <LanguageToggle />
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="theme-toggle"
-            aria-label={
-              theme === "dark"
-                ? t("Switch to light mode")
-                : t("Switch to dark mode")
-            }
-          >
-            {theme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
-          </button>
+          <div className="sm:hidden shrink-0">
+            <MobileDisplaySettings />
+          </div>
+          <div className="hidden sm:flex items-center gap-4 shrink-0">
+            <LanguageToggle />
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle shrink-0"
+              aria-label={
+                theme === "dark"
+                  ? t("Switch to light mode")
+                  : t("Switch to dark mode")
+              }
+            >
+              {theme === "dark" ? (
+                <IconSun size={18} />
+              ) : (
+                <IconMoon size={18} />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className="app-main min-h-0 min-w-0 flex-1 overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }

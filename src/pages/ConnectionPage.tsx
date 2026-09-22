@@ -1,3 +1,4 @@
+import { ResponsiveButton } from "../components/ResponsiveButton";
 import { useState, useContext, useMemo } from "react";
 import {
   IconPlugConnected,
@@ -19,7 +20,7 @@ import { useConnectionVersionHistory } from "../hooks/versionHistory/useConnecti
 import { useOsDetection } from "../hooks/useOsDetection";
 import { useDefaultLayer } from "../hooks/useDefaultLayer";
 import { useLayerNames, layerLabel } from "../hooks/useLayerNames";
-import { ConnectionContext } from "../components/DeviceConnection";
+import { ConnectionContext } from "../contexts/DeviceConnectionContext";
 import { OutputPriority } from "../proto/zmk/ble_management/ble_management";
 import { Os } from "../proto/cormoran/os_detection/os_detection";
 import { useLanguage } from "../hooks/useLanguage";
@@ -184,11 +185,11 @@ export function ConnectionPage() {
       : t("Not set");
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="app-page p-4 sm:p-6 h-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col tablet:flex-row tablet:items-center gap-3 mb-8">
-          <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
               <IconPlugConnected
                 size={24}
@@ -204,11 +205,12 @@ export function ConnectionPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Refresh Button */}
             {connection.isConnected && (
               <>
-                <button
+                <ResponsiveButton
+                  label={t("Refresh")}
                   className="btn-ghost flex items-center gap-2"
                   onClick={() => void reload()}
                   disabled={isLoading}
@@ -218,8 +220,7 @@ export function ConnectionPage() {
                     size={16}
                     className={isLoading ? "animate-spin" : ""}
                   />
-                  {t("Refresh")}
-                </button>
+                </ResponsiveButton>
                 <ResetVersionMenu
                   label={t("Versions")}
                   versions={versionHistory.versions}
@@ -826,14 +827,18 @@ export function ConnectionPage() {
                 return (
                   <div
                     key={zmkOs}
-                    className={`flex items-center justify-between gap-4 p-2 rounded-lg border ${
+                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 tablet:flex tablet:justify-between tablet:gap-4 p-2 rounded-lg border ${
                       isCurrent
                         ? "bg-[var(--color-electric)]/10 border-[var(--color-electric)]/20"
                         : "border-transparent"
                     }`}
                   >
-                    <OsBadge os={protoOs} />
+                    <OsBadge
+                      os={protoOs}
+                      className="shrink-0 whitespace-nowrap"
+                    />
                     <LayerSelect
+                      className="min-w-0 min-h-11 tablet:min-h-0"
                       value={entry?.value ?? -1}
                       layerCount={defaultLayer.state?.layerCount ?? 0}
                       layerNames={layerNames}

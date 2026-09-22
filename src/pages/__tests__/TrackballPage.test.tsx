@@ -1,7 +1,7 @@
 /**
  * Tests for TrackballPage component
  */
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TrackballPage } from "../TrackballPage";
 import { useRuntimeInputProcessor } from "../../hooks/useRuntimeInputProcessor";
@@ -61,9 +61,21 @@ const createMockHookReturn = (overrides = {}) => ({
   ...overrides,
 });
 
+function rotationToggle() {
+  const card = screen
+    .getByRole("heading", { name: "Sensor Rotation" })
+    .closest(".glass-card");
+  expect(card).not.toBeNull();
+  return within(card as HTMLElement).getByRole("switch");
+}
+
 describe("TrackballPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("should render trackball settings header", () => {
@@ -126,6 +138,32 @@ describe("TrackballPage", () => {
     expect(screen.getByText("Scaling")).toBeInTheDocument();
   });
 
+  it("switches processors from the mobile selector", async () => {
+    const user = userEvent.setup();
+    mockUseRuntimeInputProcessor.mockReturnValue(
+      createMockHookReturn({
+        processors: [
+          createMockProcessor({ id: 0, name: "trackpad" }),
+          createMockProcessor({ id: 1, name: "trackball" }),
+        ],
+      }),
+    );
+
+    render(<TrackballPage />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Select processor or PMW3610 driver",
+    });
+    expect(trigger).toHaveTextContent("trackpad");
+
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: "trackball" }));
+
+    expect(trigger).toHaveTextContent("Processor");
+    expect(trigger).toHaveTextContent("trackball");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("should display current speed settings", () => {
     mockUseRuntimeInputProcessor.mockReturnValue(
       createMockHookReturn({
@@ -159,15 +197,15 @@ describe("TrackballPage", () => {
     render(<TrackballPage />);
 
     expect(screen.getByText("Sensor Rotation")).toBeInTheDocument();
-    // Check for rotation toggle - rotation should be enabled when degrees != 0
-    const switches = screen.getAllByRole("switch");
-    // The rotation switch should be checked (rotation is 90 degrees)
-    expect(switches[0]).toBeInTheDocument();
+    expect(rotationToggle()).toBeChecked();
+    expect(screen.getByRole("slider", { name: "Sensor Rotation" })).toHaveValue(
+      "90",
+    );
   });
 
   it("should call setScaling when scaling step button is clicked", async () => {
     jest.useFakeTimers();
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const mockSetScaling = jest.fn();
 
     mockUseRuntimeInputProcessor.mockReturnValue(
@@ -187,13 +225,11 @@ describe("TrackballPage", () => {
     });
 
     expect(mockSetScaling).toHaveBeenCalledWith(0, 21, 20);
-
-    jest.useRealTimers();
   });
 
   it("should increase scaling from decimal step values", async () => {
     jest.useFakeTimers();
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const mockSetScaling = jest.fn();
 
     mockUseRuntimeInputProcessor.mockReturnValue(
@@ -217,13 +253,11 @@ describe("TrackballPage", () => {
     });
 
     expect(mockSetScaling).toHaveBeenCalledWith(0, 6, 5);
-
-    jest.useRealTimers();
   });
 
   it("should call setRotation when rotation is toggled off", async () => {
     jest.useFakeTimers();
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const mockSetRotation = jest.fn();
 
     // Start with rotation enabled at 90 degrees
@@ -240,12 +274,14 @@ describe("TrackballPage", () => {
 
     render(<TrackballPage />);
 
-    // Find all switches (active layers toggle, rotation toggle, temp layer toggle)
-    const switches = screen.getAllByRole("switch");
-    // Second switch is rotation toggle (first is active layers mode), should be enabled since rotation is 90
-    const rotationToggle = switches[1];
-    // Toggle it off
-    await user.click(rotationToggle);
+    const toggle = rotationToggle();
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(
+      screen.queryByRole("slider", { name: "Sensor Rotation" }),
+    ).not.toBeInTheDocument();
+    expect(mockSetRotation).not.toHaveBeenCalled();
 
     // Fast-forward time to trigger debounced auto-save (1500ms)
     await act(async () => {
@@ -254,13 +290,11 @@ describe("TrackballPage", () => {
 
     // Disabling rotation should set it to 0
     expect(mockSetRotation).toHaveBeenCalledWith(0, 0);
-
-    jest.useRealTimers();
   });
 
   it("should call setRotation when rotation step button is clicked", async () => {
     jest.useFakeTimers();
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const mockSetRotation = jest.fn();
 
     mockUseRuntimeInputProcessor.mockReturnValue(
@@ -283,8 +317,6 @@ describe("TrackballPage", () => {
     });
 
     expect(mockSetRotation).toHaveBeenCalledWith(0, 91);
-
-    jest.useRealTimers();
   });
 
   it("should display current configuration details", () => {

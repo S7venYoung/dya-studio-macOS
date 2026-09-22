@@ -4,10 +4,17 @@
  * This test suite verifies the keymap editor UI,
  * including layer selection, key interaction, and save/discard operations.
  */
-import { render, screen, within } from "@testing-library/react";
+import { useVersionHistory } from "../../hooks/useVersionHistory";
+import { createIdleVersionHistory } from "../testUtils/versionHistory";
+
+// Keep unasserted IndexedDB reads/captures out of these editing scenarios.
+// Storage/diff units have separate tests; page-to-history wiring is not covered here.
+jest.mock("../../hooks/useVersionHistory");
+
+import { act, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeymapPage } from "../KeymapPage";
-import { ConnectionContext } from "../../components/DeviceConnection";
+import { ConnectionContext } from "../../contexts/DeviceConnectionContext";
 import {
   ZMKAppProvider,
   createConnectedMockZMKApp,
@@ -107,6 +114,8 @@ describe("KeymapPage", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useVersionHistory).mockReturnValue(createIdleVersionHistory());
+    localStorage.clear();
 
     // Default to unlocked; locked-specific tests override this.
     mockUseStudioLockState.mockReturnValue({
@@ -259,6 +268,194 @@ describe("KeymapPage", () => {
     });
   });
 
+  describe("Floating binding editor", () => {
+    const setup = async (setBinding = jest.fn().mockResolvedValue(true)) => {
+      const user = userEvent.setup();
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: new Map([
+            [
+              1,
+              {
+                id: 1,
+                displayName: "Key Press",
+                metadata: [
+                  {
+                    param1: [
+                      {
+                        name: "Key",
+                        hidUsage: { keyboardMax: 255, consumerMax: 4095 },
+                      },
+                    ],
+                    param2: [],
+                  },
+                ],
+              },
+            ],
+            [2, { id: 2, displayName: "Transparent", metadata: [] }],
+          ]),
+          setBinding,
+        },
+      );
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[0],
+      );
+      await user.click(screen.getByRole("button", { name: "Floating mode" }));
+      return { user, setBinding };
+    };
+
+    it("applies once, advances through every key, and closes at the end", async () => {
+      const { user, setBinding } = await setup();
+      for (let position = 0; position < 3; position++) {
+        expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+          `Base · Key position ${position}: ${String.fromCharCode(
+            65 + position,
+          )}`,
+        );
+        expect(
+          screen.getByText(`Base · Key ${position + 1} / 3`),
+        ).toBeInTheDocument();
+        expect(
+          screen.getAllByRole("button", { name: /Key position \d+:/ })[
+            position
+          ],
+        ).toHaveAttribute("aria-current", "true");
+        await user.click(
+          screen.getByRole("button", { name: "A", exact: true }),
+        );
+        await waitFor(() =>
+          expect(setBinding).toHaveBeenCalledTimes(position + 1),
+        );
+        expect(setBinding).toHaveBeenLastCalledWith(0, position, {
+          behaviorId: 1,
+          param1: 0x70004,
+          param2: 0,
+        });
+      }
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("advances on keycode and parameterless behavior selection without closing", async () => {
+      const { user, setBinding } = await setup();
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      await user.click(
+        screen.getByRole("button", { name: "Trans", exact: true }),
+      );
+      expect(setBinding).toHaveBeenCalledTimes(2);
+      expect(setBinding).toHaveBeenLastCalledWith(0, 1, {
+        behaviorId: 2,
+        param1: 0,
+        param2: 0,
+      });
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+    });
+
+    it("stays on the selected key when auto advance is off and remembers the setting", async () => {
+      const { user, setBinding } = await setup();
+      const toggle = screen.getByRole("button", { name: "Auto advance" });
+      expect(toggle).toHaveAttribute("aria-pressed", "true");
+      await user.click(toggle);
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      expect(localStorage.getItem("keymapAutoAdvance")).toBe("false");
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      await user.click(screen.getByRole("button", { name: "B", exact: true }));
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Auto advance" }));
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+    });
+
+    it("keeps the current key on failure and allows retry", async () => {
+      const { user, setBinding } = await setup(
+        jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true),
+      );
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(screen.getByText("Base · Key 1 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(setBinding).toHaveBeenCalledTimes(2);
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+    });
+
+    it("does not move a newly clicked key when an earlier request completes", async () => {
+      let resolve!: (success: boolean) => void;
+      const { user, setBinding } = await setup(
+        jest.fn(
+          () =>
+            new Promise<boolean>((done) => {
+              resolve = done;
+            }),
+        ),
+      );
+      await user.click(screen.getByRole("button", { name: "A", exact: true }));
+      expect(
+        screen.getByRole("button", { name: "A", exact: true }),
+      ).toBeDisabled();
+      await user.click(
+        screen.getAllByRole("button", { name: /Key position \d+:/ })[2],
+      );
+      await act(async () => resolve(true));
+      expect(setBinding).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Base · Key 3 / 3")).toBeInTheDocument();
+    });
+
+    it("navigates without applying and closes on Escape without writing", async () => {
+      const { user, setBinding } = await setup();
+      expect(
+        screen.getByRole("button", { name: "Previous key" }),
+      ).toBeDisabled();
+      await user.click(screen.getByRole("button", { name: "Next key" }));
+      expect(screen.getByText("Base · Key 2 / 3")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Previous key" }));
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(setBinding).not.toHaveBeenCalled();
+    });
+
+    it("switches repeatedly between modes without closing or applying a binding", async () => {
+      const { user, setBinding } = await setup();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await user.click(screen.getByRole("button", { name: "Dialog mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(screen.getByTestId("binding-editor-target")).toHaveTextContent(
+          "Base · Key position 0: A",
+        );
+        expect(
+          screen.getByRole("button", { name: "Close on select" }),
+        ).toHaveAttribute("aria-pressed", "true");
+        expect(
+          screen.getByRole("button", { name: "LCtrl", exact: true }),
+        ).toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: "Floating mode" }));
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: "Close on select" }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: "LCtrl", exact: true }),
+        ).not.toBeInTheDocument();
+      }
+      expect(setBinding).not.toHaveBeenCalled();
+      expect(localStorage.getItem("keymapSelectorMode")).toBe("floating");
+    });
+
+    it("closes when switching layers without applying a draft", async () => {
+      const { user, setBinding } = await setup();
+      await user.click(screen.getByRole("button", { name: "Lower" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(setBinding).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Connected State - Loaded", () => {
     it("should render layer tabs when connected", () => {
       renderComponent(
@@ -301,6 +498,161 @@ describe("KeymapPage", () => {
         screen.getAllByRole("button", { name: /Key position \d+:/ }),
       ).toHaveLength(3);
       expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    });
+
+    it("opens mobile keymap settings from the rightmost action and keeps grouped controls usable", async () => {
+      const user = userEvent.setup();
+      const setActiveLayout = jest.fn().mockResolvedValue(true);
+      const physicalLayouts = {
+        activeLayoutIndex: 0,
+        layouts: [
+          mockPhysicalLayouts.layouts[0],
+          { ...mockPhysicalLayouts.layouts[0], name: "Alternate" },
+        ],
+      };
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts,
+          behaviors: mockBehaviors,
+          setActiveLayout,
+        },
+        createConnectedMockZMKApp({
+          subsystems: [INPUT_STREAM_IDENTIFIER],
+        }),
+      );
+
+      const trigger = screen.getByRole("button", { name: "Keymap settings" });
+      expect(trigger).toBe(
+        document.querySelector(".keymap-actions")?.lastElementChild,
+      );
+      await user.click(trigger);
+
+      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
+      expect(dialog).toHaveClass(
+        "fixed",
+        "inset-0",
+        "h-dvh",
+        "w-screen",
+        "z-[9999]",
+      );
+      expect(
+        within(dialog).getByRole("heading", { name: "Layer editing" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("heading", { name: "Layout and display" }),
+      ).toBeInTheDocument();
+
+      const layerButtons = within(dialog).getByRole("group", {
+        name: "Current layer",
+      });
+      await user.click(
+        within(layerButtons).getByRole("button", { name: "Lower" }),
+      );
+      expect(
+        within(layerButtons).getByRole("button", { name: "Lower" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Move layer down (lower priority)",
+        }),
+      ).toBeDisabled();
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Move layer up (higher priority)",
+        }),
+      ).toHaveTextContent("");
+
+      await user.selectOptions(
+        within(dialog).getByLabelText("Physical Layout"),
+        "1",
+      );
+      expect(setActiveLayout).toHaveBeenCalledWith(1);
+      expect(within(dialog).getByLabelText("OS Layout")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Toggle stream mode"),
+      ).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      expect(
+        screen.queryByRole("dialog", { name: "Keymap settings" }),
+      ).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+
+    it("keeps mobile deleted-layer restore choices to three buttons plus an overflow menu", async () => {
+      const user = userEvent.setup();
+      const restoreLayer = jest
+        .fn()
+        .mockResolvedValue({ id: 0, name: "Restored", bindings: [] });
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+          removedLayerIds: [2, 3, 4, 5, 6],
+          restoreLayer,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      const dialog = screen.getByRole("dialog", { name: "Keymap settings" });
+
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 2" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 3" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Layer 4" }),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).queryByRole("button", { name: "Layer 5" }),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        within(dialog).getByRole("button", {
+          name: "Other deleted layers (2)",
+        }),
+      );
+      const menu = screen.getByRole("menu", {
+        name: "Other deleted layers",
+      });
+      await user.click(within(menu).getByRole("menuitem", { name: "Layer 6" }));
+
+      expect(restoreLayer).toHaveBeenCalledWith(6, 2);
+      expect(
+        screen.queryByRole("menu", { name: "Other deleted layers" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("keeps the rename confirmation label visible after opening it from mobile settings", async () => {
+      const user = userEvent.setup();
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      await user.click(
+        within(
+          screen.getByRole("dialog", { name: "Keymap settings" }),
+        ).getByRole("button", { name: "Rename current layer" }),
+      );
+
+      const renameDialog = screen.getByRole("dialog", { name: "Rename Layer" });
+      const confirmButton = within(renameDialog).getByRole("button", {
+        name: "Rename",
+      });
+      expect(confirmButton).toHaveTextContent("Rename");
+      expect(confirmButton.querySelector(".hidden")).not.toBeInTheDocument();
     });
 
     it("should show unsaved changes indicator", () => {
@@ -487,6 +839,33 @@ describe("KeymapPage", () => {
         screen.queryByText("Keyboard Unlock Required"),
       ).not.toBeInTheDocument();
       await user.click(screen.getByText("Locked"));
+      expect(screen.getByText("Keyboard Unlock Required")).toBeInTheDocument();
+    });
+
+    it("closes mobile settings before showing the unlock prompt for a layer edit", async () => {
+      const user = userEvent.setup();
+      mockUseStudioLockState.mockReturnValue({
+        locked: true,
+        lockState: "locked",
+      });
+      renderComponent(
+        { isConnected: true },
+        {
+          keymap: mockKeymap,
+          physicalLayouts: mockPhysicalLayouts,
+          behaviors: mockBehaviors,
+        },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Keymap settings" }));
+      const settings = screen.getByRole("dialog", { name: "Keymap settings" });
+      await user.click(
+        within(settings).getByRole("button", { name: "Rename current layer" }),
+      );
+
+      expect(
+        screen.queryByRole("dialog", { name: "Keymap settings" }),
+      ).not.toBeInTheDocument();
       expect(screen.getByText("Keyboard Unlock Required")).toBeInTheDocument();
     });
 
