@@ -7,7 +7,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "DYAStudioMac",
-            path: "Sources/DYAStudioMac"
+            path: "Sources/DYAStudioMac",
+            swiftSettings: [.unsafeFlags(["-parse-as-library"])]
         )
     ]
 )
