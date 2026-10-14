@@ -45,7 +45,7 @@ struct StudioWebView: NSViewRepresentable {
             )
         )
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = StudioWKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         context.coordinator.webView = webView
@@ -241,6 +241,34 @@ struct StudioWebView: NSViewRepresentable {
                 alert.informativeText = message
                 alert.runModal()
             }
+        }
+    }
+}
+
+final class StudioWKWebView: WKWebView {
+    private var windowCloseObserver: NSObjectProtocol?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let observer = windowCloseObserver {
+            NotificationCenter.default.removeObserver(observer)
+            windowCloseObserver = nil
+        }
+        guard let window else { return }
+        windowCloseObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { _ in
+            DispatchQueue.main.async {
+                NSApplication.shared.terminate(nil)
+            }
+        }
+    }
+
+    deinit {
+        if let observer = windowCloseObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 }
