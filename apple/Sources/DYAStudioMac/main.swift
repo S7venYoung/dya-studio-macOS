@@ -6,6 +6,8 @@ import WebKit
 
 @main
 struct DYAStudioMacApp: App {
+    @NSApplicationDelegateAdaptor(StudioAppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             StudioWebView()
@@ -15,6 +17,12 @@ struct DYAStudioMacApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
         }
+    }
+}
+
+final class StudioAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
     }
 }
 

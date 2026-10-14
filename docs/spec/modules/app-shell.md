@@ -26,6 +26,8 @@
 
 ## 現行の機能仕様
 
+- SHELL-015: macOS native app の最後のウィンドウで赤い close ボタン（または Cmd+W）を押すと、アプリケーション全体を終了する。最小化では終了しない。終了時に device flash への Save は自動実行せず、既存の永続化済み表示設定は保持する。根拠: ユーザー要求（2026-10-14）、[native app](../../../apple/Sources/DYAStudioMac/main.swift) の `StudioAppDelegate.applicationShouldTerminateAfterLastWindowClosed`。実機でのプロセス終了確認は未実測。
+
 ### モバイル表示の共通契約
 
 2026-09-20 のユーザー要求（メインコンテンツの横スクロール防止、アイコン中心の操作、タッチでの説明表示）に基づく。根拠: [共通CSS](../../../src/index.css) の `app-page` / `responsive-action`、[ResponsiveButton](../../../src/components/ResponsiveButton.tsx)、[EditorTooltip](../../../src/components/EditorTooltip.tsx)、[InfoTip](../../../src/components/InfoTip.tsx)、[DocTip](../../../src/components/DocTip.tsx)。
