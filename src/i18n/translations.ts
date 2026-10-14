@@ -9,6 +9,81 @@ export const languageLabels: Record<Language, string> = {
 };
 
 const ja: Record<string, string> = {
+  "Inertia simulation": "慣性シミュレーション",
+  "Five-second input and simulated output": "5秒の入力とシミュレーション出力",
+  "Example input peak before scaling": "スケーリング前の想定入力の最大値",
+  "Example input": "想定入力",
+  "Inertia output": "通常の慣性：合計出力",
+  "Fast input output": "Fast input：合計出力",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average physical input plus supplemental inertia over 200 ms. Inertia fills the gap between the target speed and the latest physical input rate; Fast multiplies the total target speed. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
+    "入力は3.2秒で頂点になる放物線で、5秒で途中停止します（20ms周期）。想定入力の大きさはスケーリングとしきい値に合わせ、最大32767に調整します。出力線は実入力と補助慣性出力の合計を200ms区間で平均しています。慣性は目標速度と直近の実入力速度の不足分を補い、Fastは合計の目標速度に倍率を適用します。両モードをONとして比較します。Fast inputがOFFの場合、プレビューのしきい値はmax(入力閾値×1.5,20)を切上げ、65535以内にします。倍率100%やFastしきい値に届かない場合は線が重なります。15秒以降も出力が続く場合があります。",
+
+  "Toggle input test": "動作確認ウィンドウの表示を切り替える",
+  Inertia: "慣性",
+  "Enable Fast input": "Fast input を有効にする",
+  "Close input test": "動作確認を閉じる",
+  "Browser input": "ブラウザ入力",
+  "Horizontal input history": "左右方向の入力履歴",
+  "Vertical input history": "上下方向の入力履歴",
+  "Inertia output history": "慣性の出力履歴",
+  "Dashed: reference curves; solid: live browser input classified by device activity.":
+    "破線：設定の参考曲線。実線：デバイスの状態通知で分類したブラウザの実測入力。",
+
+  Center: "中央に戻す",
+  Scroll: "スクロール",
+  "Inertia / Fast input": "慣性 / Fast input",
+  "Inertia is not supported by this device":
+    "このデバイスは慣性設定に対応していません",
+  "Enable Inertia": "慣性を有効にする",
+  "Changes are saved to the device after a short delay. Inertia settings remain editable when disabled.":
+    "変更は少し待ってからデバイスに保存されます。慣性が無効でも設定を編集できます。",
+  "Measurement Window (ms)": "測定期間 (ms)",
+  "Input measurement window for inertia and Fast input.":
+    "慣性と Fast input の入力を測定する期間です。",
+  "Output Interval (ms)": "出力間隔 (ms)",
+  "Generated output cadence; output is scaled by interval / window.":
+    "慣性の出力間隔です。出力量は出力間隔 ÷ 測定期間で調整されます。",
+  "Input Threshold": "入力しきい値",
+  "Threshold in scaled input counts. Reverse input stops inertia.":
+    "スケーリング後の入力カウントのしきい値です。逆方向の入力で慣性が止まります。",
+  "Decay per Output Interval (%)": "出力ごとの減衰率 (%)",
+  "0 keeps speed; 100 stops after one more interval.":
+    "0 は速度を維持し、100 は次の出力後に停止します。",
+  "Normal Output Limit": "通常時の出力上限",
+  "0 is unlimited. Fast input ignores this limit.":
+    "0 は無制限です。Fast input にはこの上限を適用しません。",
+  "Fast Input Threshold": "Fast input しきい値",
+  "0 disables Fast input. Boost lasts until inertia stops.":
+    "0 は Fast input を無効にします。加速は慣性が止まるまで続きます。",
+  "Fast Output (%)": "Fast input 出力 (%)",
+  "200% doubles the total target speed, including physical input.":
+    "200% は実入力を含む合計の目標速度を2倍にします。",
+  "Input test": "動作確認",
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape, left-click or right-click releases it.":
+    "有限エリア内でスクロールを試せます。左クリックでマウス移動をキャプチャし、Escape で解除します。",
+  "Horizontal scroll": "左右スクロール",
+  "Vertical scroll": "上下スクロール",
+  "Show inertia activity": "慣性 / Fast input の状態を表示",
+  "Activity notifications are off": "状態通知はオフです",
+  "Fast input": "Fast input 動作中",
+  "Inertia active": "慣性動作中",
+  "Inertia idle": "慣性停止中",
+  Settled: "出力終了",
+  "Reverse input": "逆方向の入力",
+  "Layer inactive": "レイヤー無効",
+  "Settings changed": "設定変更",
+  "Unknown stop reason": "不明な停止理由",
+  "Mouse captured — Escape to release":
+    "マウス移動をキャプチャ中 — Escape で解除",
+  "Mouse not captured": "マウス移動のキャプチャなし",
+  "Mouse capture is unavailable. Scrolling still works.":
+    "マウス移動をキャプチャできません。スクロールは引き続き試せます。",
+  "Finite input test area": "有限の動作確認エリア",
+  "Scroll position": "スクロール位置",
+  "Mouse position": "マウス位置",
+  "Mouse movement": "マウス移動",
+  "Movement is browser input from any pointing device. Activity is reported by the selected processor; this area does not simulate inertia.":
+    "移動量はブラウザが受け取る各ポインティングデバイスの入力です。慣性 / Fast input の状態は選択中の processor の通知で、ここでは慣性をシミュレーションしません。",
   "Search behaviors...": "ビヘイビアを検索...",
   "Keep the selected behavior category": "選択したビヘイビアカテゴリを維持",
   "Reset the behavior category when reopening":
@@ -449,6 +524,8 @@ const ja: Record<string, string> = {
   "Select a macro or combo": "マクロまたはコンボを選択",
   "Select macro, combo, or settings": "マクロ、コンボ、設定を選択",
   "Create macro": "マクロを新規作成",
+  "New macro": "新規マクロ",
+  "Edit macros": "マクロを編集",
   "New combo": "コンボを新規作成",
   "Choose an item from the lists on the left.":
     "左のリストから項目を選択してください。",
@@ -518,6 +595,7 @@ const ja: Record<string, string> = {
   "Loading combo data...": "コンボデータを読み込み中...",
   configured: "設定済み",
   "No runtime combos configured": "ランタイムコンボが設定されていません",
+  "No available combo slots.": "空きコンボスロットがありません。",
   "Combo {{index}}": "コンボ {{index}}",
   "Max slots": "最大スロット数",
   "Timeout ms": "タイムアウト ms",
@@ -528,6 +606,7 @@ const ja: Record<string, string> = {
     "既存のスロットを選択するか、新しいコンボを作成してください。",
   "New Combo": "新しいコンボ",
   "Combo Editor": "コンボエディター",
+  "Open Combo Editor": "コンボエディターを開く",
   "Existing slot": "既存のスロット",
   "New slot": "新しいスロット",
   "Save Combo": "コンボを保存",
@@ -568,6 +647,18 @@ const ja: Record<string, string> = {
   Unsaved: "未保存",
   Queued: "待機中",
   "Memory...": "メモリに書き込み中...",
+  "Waiting to apply...": "反映待機中...",
+  "Applying to memory...": "メモリに反映中...",
+  "Applied to memory": "メモリに反映済み",
+  "Save and close": "保存して閉じる",
+  "Macro name already exists": "同じ名前のマクロが既にあります",
+  "Discard macro edits?": "マクロの変更を破棄しますか？",
+  "Changes made in this editor will be removed from device memory. Changes already in memory when you opened it will remain.":
+    "この画面で行った変更はデバイスのメモリから取り消します。開く前からメモリにあった未保存の変更は残ります。",
+  "Keep editing": "編集を続ける",
+  "Discard edits and close": "変更を破棄して閉じる",
+  "Could not restore the macro in memory. Try again.":
+    "メモリ上のマクロを元に戻せませんでした。もう一度お試しください。",
   "In memory": "メモリ内",
   Current: "現在値",
   "Discard item changes": "項目の変更を破棄",
@@ -764,6 +855,24 @@ const ja: Record<string, string> = {
   Parameters: "パラメーター",
   param1: "param1",
   param2: "param2",
+  "Key to press": "押すキー",
+  "Layer active while held": "長押し中のレイヤー",
+  "Layer to switch to": "切り替え先のレイヤー",
+  "Layer to toggle": "切り替えるレイヤー",
+  "Key sent on tap": "タップ時のキー",
+  "Key to toggle": "切り替えるキー",
+  "Key held until the next key press": "次のキー入力まで保持するキー",
+  "Layer active until the next key press": "次のキー入力まで有効なレイヤー",
+  "Output to select (USB/BLE)": "選択する出力（USB/BLE）",
+  "Select a keycode, usually modifier":
+    "長押し中の修飾キー（キーコード）を選択",
+  "Select runtime macro": "実行するランタイムマクロを選択",
+  "Select a mouse keycode": "押すマウスボタンを選択",
+  "Configure movement speed (upper 16 bits = X, lower 16 bits = Y)":
+    "マウス移動量を設定（上位16ビット = X、下位16ビット = Y）",
+  "Configure scroll amount (upper 16 bits = X, lower 16 bits = Y)":
+    "スクロール量を設定（上位16ビット = X、下位16ビット = Y）",
+  "Select a Bluetooth command": "Bluetooth コマンドを選択",
   "Mouse Button": "マウスボタン",
   "Pointer movement": "ポインター移動",
   Constant: "定数",
@@ -818,7 +927,8 @@ const ja: Record<string, string> = {
   "No keycodes found": "キーコードが見つかりません",
   "Show key layout": "キー配列を表示",
   "Show keycodes by category": "カテゴリ別に表示",
-  "Click a key to select its keycode": "キーをクリックしてキーコードを選択",
+  "For other keys, use the category button at the top right":
+    "その他のキーは右上のカテゴリ別表示ボタンから選択できます",
   Letters: "文字",
   Numbers: "数字",
   Navigation: "ナビゲーション",
@@ -1461,6 +1571,79 @@ const ja: Record<string, string> = {
 };
 
 const zh: Record<string, string> = {
+  "Inertia simulation": "惯性模拟",
+  "Five-second input and simulated output": "5秒输入及模拟输出",
+  "Example input peak before scaling": "缩放前的示例输入峰值",
+  "Example input": "示例输入",
+  "Inertia output": "普通惯性：总输出",
+  "Fast input output": "Fast input：总输出",
+  "A parabolic input peaks at 3.2 seconds and stops abruptly at 5 seconds (20 ms reports). The example amplitude adapts to scaling and thresholds, capped at 32767 raw counts. Output trends average physical input plus supplemental inertia over 200 ms. Inertia fills the gap between the target speed and the latest physical input rate; Fast multiplies the total target speed. Both modes are previewed as enabled. When Fast input is OFF, its preview threshold is ceil(max(input threshold × 1.5, 20)), capped at 65535. Curves can coincide at 100% boost or when the Fast threshold is not reached. Output may continue beyond 15 seconds.":
+    "抛物线输入在3.2秒达到峰值，并在5秒突然停止（20ms周期）。示例输入幅度按缩放和阈值调整，上限32767。输出趋势为实际输入和补充惯性输出之和的200ms区间平均值。惯性补足目标速度与最新实际输入速度之间的差；Fast倍率作用于总目标速度。预览假定两种模式开启。Fast input关闭时，预览阈值为ceil(max(输入阈值×1.5,20))，上限65535。倍率100%或未达到Fast阈值时曲线可重合。输出可能在15秒后继续。",
+
+  "Toggle input test": "切换输入测试窗口",
+  Inertia: "惯性",
+  "Enable Fast input": "启用 Fast input",
+  "Close input test": "关闭输入测试",
+  "Browser input": "浏览器输入",
+  "Horizontal input history": "水平输入历史",
+  "Vertical input history": "垂直输入历史",
+  "Inertia output history": "惯性输出历史",
+  "Dashed: reference curves; solid: live browser input classified by device activity.":
+    "虚线：设置参考曲线。实线：按设备状态分类的浏览器实时输入。",
+
+  Center: "回到中央",
+  Scroll: "滚动",
+  "Inertia / Fast input": "惯性 / Fast input",
+  "Inertia is not supported by this device": "此设备不支持惯性设置",
+  "Enable Inertia": "启用惯性",
+  "Changes are saved to the device after a short delay. Inertia settings remain editable when disabled.":
+    "更改会在短暂延迟后保存到设备。惯性关闭时也可编辑设置。",
+  "Measurement Window (ms)": "测量窗口 (ms)",
+  "Input measurement window for inertia and Fast input.":
+    "测量惯性和 Fast input 的输入窗口。",
+  "Output Interval (ms)": "输出间隔 (ms)",
+  "Generated output cadence; output is scaled by interval / window.":
+    "惯性输出频率；输出按间隔 / 测量窗口缩放。",
+  "Input Threshold": "输入阈值",
+  "Threshold in scaled input counts. Reverse input stops inertia.":
+    "缩放后输入计数的阈值。反向输入会停止惯性。",
+  "Decay per Output Interval (%)": "每次输出的衰减率 (%)",
+  "0 keeps speed; 100 stops after one more interval.":
+    "0 保持速度；100 在下次输出后停止。",
+  "Normal Output Limit": "正常输出上限",
+  "0 is unlimited. Fast input ignores this limit.":
+    "0 表示无限制。Fast input 不受此限制。",
+  "Fast Input Threshold": "Fast input 阈值",
+  "0 disables Fast input. Boost lasts until inertia stops.":
+    "0 禁用 Fast input。加速持续到惯性停止。",
+  "Fast Output (%)": "Fast input 输出 (%)",
+  "200% doubles the total target speed, including physical input.":
+    "200% 将包含实际输入的总目标速度加倍。",
+  "Input test": "输入测试",
+  "Scroll in the finite area. Left-click to capture mouse movement; Escape, left-click or right-click releases it.":
+    "在有限区域内测试滚动。左键捕获鼠标移动，Escape 释放。",
+  "Horizontal scroll": "水平滚动",
+  "Vertical scroll": "垂直滚动",
+  "Show inertia activity": "显示惯性 / Fast input 状态",
+  "Activity notifications are off": "状态通知已关闭",
+  "Fast input": "Fast input 活动中",
+  "Inertia active": "惯性活动中",
+  "Inertia idle": "惯性空闲",
+  Settled: "输出结束",
+  "Reverse input": "反向输入",
+  "Layer inactive": "层未激活",
+  "Settings changed": "设置已更改",
+  "Unknown stop reason": "未知停止原因",
+  "Mouse captured — Escape to release": "鼠标已捕获 — Escape 释放",
+  "Mouse not captured": "鼠标未捕获",
+  "Mouse capture is unavailable. Scrolling still works.":
+    "无法捕获鼠标。仍可测试滚动。",
+  "Finite input test area": "有限输入测试区域",
+  "Scroll position": "滚动位置",
+  "Mouse position": "鼠标位置",
+  "Mouse movement": "鼠标移动",
+  "Movement is browser input from any pointing device. Activity is reported by the selected processor; this area does not simulate inertia.":
+    "移动量来自浏览器接收的任意指点设备输入。状态由所选 processor 报告；此区域不模拟惯性。",
   "Search behaviors...": "搜索行为...",
   "Keep the selected behavior category": "保留所选行为类别",
   "Reset the behavior category when reopening": "重新打开时重置行为类别",
@@ -1855,6 +2038,8 @@ const zh: Record<string, string> = {
   "Select a macro or combo": "选择宏或组合键",
   "Select macro, combo, or settings": "选择宏、组合键或设置",
   "Create macro": "新建宏",
+  "New macro": "新建宏",
+  "Edit macros": "编辑宏",
   "New combo": "新建组合键",
   "Choose an item from the lists on the left.":
     "请从左侧的列表中选择一个项目。",
@@ -1919,6 +2104,7 @@ const zh: Record<string, string> = {
   "Loading combo data...": "正在加载组合键数据...",
   configured: "已配置",
   "No runtime combos configured": "未配置运行时组合键",
+  "No available combo slots.": "没有可用的组合键插槽。",
   "Combo {{index}}": "组合键 {{index}}",
   "Max slots": "最大插槽数",
   "Timeout ms": "超时（毫秒）",
@@ -1929,6 +2115,7 @@ const zh: Record<string, string> = {
     "请选择现有插槽或创建一个新组合键。",
   "New Combo": "新建组合键",
   "Combo Editor": "组合键编辑器",
+  "Open Combo Editor": "打开组合键编辑器",
   "Existing slot": "现有插槽",
   "New slot": "新插槽",
   "Save Combo": "保存组合键",
@@ -1966,6 +2153,18 @@ const zh: Record<string, string> = {
   Unsaved: "未保存",
   Queued: "排队中",
   "Memory...": "正在写入内存...",
+  "Waiting to apply...": "等待应用...",
+  "Applying to memory...": "正在应用到内存...",
+  "Applied to memory": "已应用到内存",
+  "Save and close": "保存并关闭",
+  "Macro name already exists": "宏名称已存在",
+  "Discard macro edits?": "放弃宏编辑？",
+  "Changes made in this editor will be removed from device memory. Changes already in memory when you opened it will remain.":
+    "此编辑器中的更改将从设备内存中撤销。打开编辑器前已有的内存更改会保留。",
+  "Keep editing": "继续编辑",
+  "Discard edits and close": "放弃编辑并关闭",
+  "Could not restore the macro in memory. Try again.":
+    "无法在内存中恢复宏，请重试。",
   "In memory": "内存中",
   Current: "当前值",
   "Discard item changes": "放弃项目更改",
@@ -2148,6 +2347,23 @@ const zh: Record<string, string> = {
   Parameters: "参数",
   param1: "参数1",
   param2: "参数2",
+  "Key to press": "要按下的按键",
+  "Layer active while held": "按住时激活的层",
+  "Layer to switch to": "要切换到的层",
+  "Layer to toggle": "要切换的层",
+  "Key sent on tap": "轻触时发送的按键",
+  "Key to toggle": "要切换的按键",
+  "Key held until the next key press": "保持到下次按键的按键",
+  "Layer active until the next key press": "保持到下次按键的层",
+  "Output to select (USB/BLE)": "要选择的输出（USB/BLE）",
+  "Select a keycode, usually modifier": "选择按住时的修饰键（键码）",
+  "Select runtime macro": "选择要执行的运行时宏",
+  "Select a mouse keycode": "选择要按下的鼠标按键",
+  "Configure movement speed (upper 16 bits = X, lower 16 bits = Y)":
+    "设置鼠标移动量（高16位 = X，低16位 = Y）",
+  "Configure scroll amount (upper 16 bits = X, lower 16 bits = Y)":
+    "设置滚动量（高16位 = X，低16位 = Y）",
+  "Select a Bluetooth command": "选择蓝牙命令",
   "Mouse Button": "鼠标按键",
   "Pointer movement": "指针移动",
   Constant: "常量",
@@ -2201,7 +2417,8 @@ const zh: Record<string, string> = {
   "No keycodes found": "未找到键码",
   "Show key layout": "显示键盘布局",
   "Show keycodes by category": "按类别显示键码",
-  "Click a key to select its keycode": "点击按键以选择其键码",
+  "For other keys, use the category button at the top right":
+    "其他按键可通过右上角的分类显示按钮选择",
   Letters: "字母",
   Numbers: "数字",
   Navigation: "导航",

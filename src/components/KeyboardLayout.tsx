@@ -6,6 +6,8 @@
  * Responsive to window size with min/max limits.
  */
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
+import { IconLink } from "@tabler/icons-react";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { PhysicalKey } from "./PhysicalKey";
 import { PhysicalLayoutModule } from "./PhysicalLayoutModule";
 import type {
@@ -18,6 +20,10 @@ import type {
 import type { PhysicalLayoutModulePresentation } from "../hooks/usePhysicalLayoutModules";
 import { formatBehaviorBinding } from "../lib/behaviorMetadata";
 import type { KeyboardLayoutType } from "../lib/keyboardLayouts";
+import type { Combo } from "../hooks/useRuntimeCombo";
+import { hasLayer } from "./macroCombo/comboUtils";
+import { adjacentComboCenter } from "./comboPreview";
+import { useLanguage } from "../hooks/useLanguage";
 
 // Base unit size for 1U key in pixels at scale 1.0
 const BASE_UNIT_SIZE = 54;
@@ -79,6 +85,9 @@ interface KeyboardLayoutProps {
   runtimeMacros?: Array<{ slot: number; name?: string }>;
   /** Accessible name for the keyboard preview region */
   ariaLabel?: string;
+  /** Runtime combos shown on this layer. Omitted in the combo position editor. */
+  combos?: Combo[];
+  onComboClick?: (combo: Combo) => void;
 }
 
 type LayoutGeometry = Pick<
@@ -135,7 +144,10 @@ export function KeyboardLayout({
   highlightedKeys,
   runtimeMacros = [],
   ariaLabel,
+  combos = [],
+  onComboClick,
 }: KeyboardLayoutProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1.0);
 
@@ -304,6 +316,22 @@ export function KeyboardLayout({
     [behaviors],
   );
 
+  const visibleCombos = combos.filter(
+    (combo) =>
+      combo.enabled &&
+      (combo.layerMask === 0 || hasLayer(combo.layerMask, layer.id)),
+  );
+  // Keep the card and preview numbering stable across layer filtering.
+  const comboNumbers = new Map(
+    combos.map((combo, position) => [combo.index, position + 1]),
+  );
+  const comboLabels = visibleCombos.map((combo) => ({
+    combo,
+    label: getKeyLongDisplayName(-1, combo.behavior),
+    center: adjacentComboCenter(layout.keys, combo.keyPositions),
+    number: comboNumbers.get(combo.index) ?? 1,
+  }));
+
   return (
     <div
       ref={containerRef}
@@ -336,6 +364,9 @@ export function KeyboardLayout({
             ...key,
             x: key.x + (rawBounds.offsetX / BASE_UNIT_SIZE) * 100,
             y: key.y + (rawBounds.offsetY / BASE_UNIT_SIZE) * 100,
+            // The pivot is in layout coordinates, so translate it with the key.
+            rx: key.rx + (rawBounds.offsetX / BASE_UNIT_SIZE) * 100,
+            ry: key.ry + (rawBounds.offsetY / BASE_UNIT_SIZE) * 100,
           };
 
           return (
@@ -368,6 +399,15 @@ export function KeyboardLayout({
                   : undefined
               }
               scale={scale}
+              combos={comboLabels
+                .filter(({ combo }) => combo.keyPositions.includes(position))
+                .map(({ combo, label, center, number }) => ({
+                  index: combo.index,
+                  name: combo.name,
+                  label,
+                  showBadge: center === null,
+                  badgeNumber: number,
+                }))}
             />
           );
         })}
@@ -391,6 +431,57 @@ export function KeyboardLayout({
             />
           );
         })}
+        {comboLabels.map(({ combo, label, center }) =>
+          center ? (
+            <Tooltip.Provider key={`combo-${combo.index}`} delayDuration={200}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <button
+                    type="button"
+                    className="absolute z-10 rounded border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-electric)] shadow-md hover:border-[var(--color-electric)]/60 hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)]"
+                    style={{
+                      width: BASE_UNIT_SIZE * scale * 0.5,
+                      height: BASE_UNIT_SIZE * scale * 0.5,
+                      left:
+                        (center.x / 100) * BASE_UNIT_SIZE * scale +
+                        bounds.offsetX -
+                        BASE_UNIT_SIZE * scale * 0.25,
+                      top:
+                        (center.y / 100) * BASE_UNIT_SIZE * scale +
+                        bounds.offsetY -
+                        BASE_UNIT_SIZE * scale * 0.25,
+                    }}
+                    onClick={() => onComboClick?.(combo)}
+                    aria-label={`${t("Combo")} ${combo.name || combo.index}: ${label}`}
+                  >
+                    <IconLink
+                      className="absolute left-px top-px"
+                      size={7}
+                      aria-hidden="true"
+                    />
+                    <span className="flex h-full w-full items-center justify-center truncate px-0.5 text-[10px] font-semibold leading-none">
+                      {label}
+                    </span>
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
+                    sideOffset={5}
+                  >
+                    <span className="text-[var(--color-text-muted)]">
+                      {t("Combo")}:{" "}
+                    </span>
+                    <span>
+                      {combo.name || `${t("Combo")} ${combo.index}`} · {label}
+                    </span>
+                    <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          ) : null,
+        )}
       </div>
     </div>
   );

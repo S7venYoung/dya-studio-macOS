@@ -29,6 +29,7 @@ import {
   IconRefresh,
   IconSettings,
   IconX,
+  IconLink,
 } from "@tabler/icons-react";
 import { useStudioLockState } from "@cormoran/zmk-studio-react-hook";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -40,12 +41,24 @@ import { KeyboardLayout } from "../components/KeyboardLayout";
 import { BrowserKeyInputOverlay } from "../components/BrowserKeyInputOverlay";
 import { EditorTooltip } from "../components/EditorTooltip";
 import { KeycodeSelector } from "../components/KeycodeSelector";
+import { MacroEditorDialog } from "../components/macroCombo/MacroEditorDialog";
 import { SensorRotationConfig } from "../components/SensorRotationConfig";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useKeymap, getKeymapLoadingLabel } from "../hooks/useKeymap";
 import { usePhysicalLayoutModules } from "../hooks/usePhysicalLayoutModules";
 import { useRuntimeSensorRotate } from "../hooks/useRuntimeSensorRotate";
 import { useRuntimeMacro } from "../hooks/useRuntimeMacro";
+import { useMacroEditor } from "../components/macroCombo/useMacroEditor";
+import { useRuntimeCombo, type Combo } from "../hooks/useRuntimeCombo";
+import { useComboEditor } from "../components/macroCombo/useComboEditor";
+import { ComboEditorCard } from "../components/macroCombo/ComboEditorCard";
+import {
+  comboEditStatus,
+  formatComboBehavior,
+  defaultBehaviorBinding,
+  formatLayerScope,
+} from "../components/macroCombo/comboUtils";
+import { StatusDot } from "../components/EditStatusIndicator";
 import { useInputStream } from "../hooks/useInputStream";
 import { getAvailableLayouts, getLayoutLabel } from "../lib/keyboardLayouts";
 import type { BehaviorBinding } from "../hooks/useKeymap";
@@ -56,6 +69,7 @@ import { ResetVersionMenu } from "../components/versionHistory/ResetVersionMenu"
 import { VersionDiffModal } from "../components/versionHistory/VersionDiffModal";
 import { useKeymapVersionHistory } from "../hooks/versionHistory/useKeymapVersionHistory";
 import { useIsTabActive } from "../hooks/useIsTabActive";
+import type { FloatingWindowPosition } from "../hooks/useFloatingWindow";
 import "./keymap.css";
 
 export function KeymapPage() {
@@ -69,6 +83,9 @@ export function KeymapPage() {
   // to label macro keys, not to paint the preview, so we don't let its RPCs
   // compete with the keymap load. autoLoad:false suppresses the on-mount fetch.
   const runtimeMacro = useRuntimeMacro({ autoLoad: false });
+  const runtimeCombo = useRuntimeCombo({ autoLoad: false });
+  const { isAvailable: isComboAvailable, reload: reloadRuntimeCombos } =
+    runtimeCombo;
   const inputStream = useInputStream();
   // Snapshots the keymap into IndexedDB after every full load, and drives the
   // "restore a previous version" flow behind the reset dropdown.
@@ -124,12 +141,24 @@ export function KeymapPage() {
 
   // Local UI state
   const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
+  // Discard, Reload and history restoration can replace the layer list without
+  // going through a layer handler. Reconcile before committing the preview and
+  // controls; an empty list resets selection for the next successful load.
+  const lastLayerIndex = Math.max(0, (keymap.keymap?.layers.length ?? 0) - 1);
+  if (selectedLayerIndex > lastLayerIndex) {
+    setSelectedLayerIndex(lastLayerIndex);
+  }
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
     null,
   );
   // The info panel and keyboard preview share the same content-column edges.
   const keymapContentAnchorRef = useRef<HTMLDivElement>(null);
   const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
+  const [macroEditorMode, setMacroEditorMode] = useState<
+    "create" | "edit" | null
+  >(null);
+  const [macroEditorSlot, setMacroEditorSlot] = useState<number | undefined>();
+  const [macroEditorSession, setMacroEditorSession] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -146,7 +175,48 @@ export function KeymapPage() {
   // Guards the deferred macro load so it fires once per keymap load; reset when
   // a new load starts (see the effect below).
   const macrosRequestedRef = useRef(false);
+  const combosRequestedRef = useRef(false);
+  const [showComboEditor, setShowComboEditor] = useState(false);
+  const [showComboBindingSelector, setShowComboBindingSelector] =
+    useState(false);
+  const [sharedFloatingPosition, setSharedFloatingPosition] =
+    useState<FloatingWindowPosition>();
+  useEffect(() => {
+    if (!showKeycodeSelector && !showComboBindingSelector) {
+      setSharedFloatingPosition(undefined);
+    }
+  }, [showComboBindingSelector, showKeycodeSelector]);
+  const comboEditor = useComboEditor({
+    runtimeCombo,
+    keymap,
+    requireUnlocked,
+    t,
+    onComboSelected: () => {},
+  });
 
+  const openComboEditor = useCallback(
+    (combo: Combo) => {
+      closeSelector();
+      comboEditor.selectCombo(combo);
+      setShowComboEditor(true);
+    },
+    [closeSelector, comboEditor],
+  );
+  const openComboBinding = useCallback(
+    (combo: Combo) => {
+      closeSelector();
+      comboEditor.selectCombo(combo);
+      setShowComboBindingSelector(true);
+    },
+    [closeSelector, comboEditor],
+  );
+  const returnToComboEditor = useCallback(() => {
+    setShowComboBindingSelector(false);
+    setShowComboEditor(true);
+  }, []);
+  const handleCreateCombo = useCallback(async () => {
+    if (await comboEditor.handleNewCombo()) setShowComboEditor(true);
+  }, [comboEditor]);
   // Get current layer
   const currentLayer = useMemo(() => {
     if (!keymap.keymap?.layers) return null;
@@ -165,6 +235,47 @@ export function KeymapPage() {
     if (!keymap.keymap?.layers) return [];
     return keymap.keymap.layers.map((l) => ({ id: l.id, name: l.name }));
   }, [keymap.keymap?.layers]);
+
+  const handleMacroAutoSelected = useCallback(() => undefined, []);
+
+  const macroEditor = useMacroEditor({
+    runtimeMacro,
+    keymap,
+    layers: layersForSelector,
+    keyboardLayout: keyboardLayoutContext.layout,
+    requireUnlocked,
+    t,
+    canMaintainSelection: macroEditorMode === "edit",
+    onAutoSelected: handleMacroAutoSelected,
+  });
+  const {
+    clearSelection: clearMacroSelection,
+    selectMacro,
+    beginCreate: beginMacroCreate,
+  } = macroEditor;
+
+  const handleOpenMacroEditor = useCallback(
+    (slot?: number) => {
+      setMacroEditorSession((session) => session + 1);
+      setMacroEditorSlot(slot);
+      if (slot === undefined) {
+        beginMacroCreate();
+        setMacroEditorMode("create");
+      } else {
+        const macro = runtimeMacro.macros.find(
+          (candidate) => candidate.slot === slot,
+        );
+        if (macro) {
+          clearMacroSelection();
+          selectMacro(macro);
+        } else {
+          clearMacroSelection();
+        }
+        setMacroEditorMode("edit");
+      }
+    },
+    [beginMacroCreate, clearMacroSelection, runtimeMacro.macros, selectMacro],
+  );
 
   // Get current binding for selected key
   const currentBinding = useMemo(() => {
@@ -226,6 +337,7 @@ export function KeymapPage() {
     (keyPosition: number) =>
       withUnlock(() => {
         selectionRevision.current += 1;
+        setShowComboBindingSelector(false);
         setSelectedKeyPosition(keyPosition);
         setShowKeycodeSelector(true);
       }),
@@ -305,15 +417,29 @@ export function KeymapPage() {
     closeSelector,
   ]);
 
-  // Handle save
+  const hasComboChanges =
+    runtimeCombo.hasPendingChanges ||
+    comboEditor.modifiedIndices.size > 0 ||
+    comboEditor.globalModifiedFields.size > 0;
+  const hasUnsavedChanges = keymap.hasUnsavedChanges || hasComboChanges;
+
+  // The page-level Save is the single flash-persistence boundary for both
+  // keymap bindings and runtime combos.
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await keymap.saveChanges();
+      await comboEditor.flushPendingWrites();
+      if (keymap.hasUnsavedChanges) {
+        await keymap.saveChanges();
+      }
+      if (isComboAvailable && hasComboChanges) {
+        const status = await runtimeCombo.saveChanges();
+        if (status) comboEditor.clearModified();
+      }
     } finally {
       setIsSaving(false);
     }
-  }, [keymap]);
+  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo]);
 
   // Re-read the keymap from the keyboard. The page keeps its state across tab
   // switches now, so this is the way to pick up changes made outside the app
@@ -323,34 +449,60 @@ export function KeymapPage() {
     void keymap.loadKeymapData();
   }, [keymap]);
 
-  // Handle discard
+  // Discard restores both independent in-memory editing domains to their
+  // last flash-saved values.
   const handleDiscard = useCallback(async () => {
     if (!confirm(t("Are you sure you want to discard all changes?"))) return;
     setIsDiscarding(true);
     try {
-      await keymap.discardChanges();
+      comboEditor.cancelPendingWrites();
+      await Promise.all([
+        keymap.hasUnsavedChanges
+          ? keymap.discardChanges()
+          : Promise.resolve(true),
+        isComboAvailable && hasComboChanges
+          ? runtimeCombo.discardChanges()
+          : Promise.resolve(null),
+      ]);
+      comboEditor.clearModified();
+      setShowComboEditor(false);
+      setShowComboBindingSelector(false);
     } finally {
       setIsDiscarding(false);
     }
-  }, [keymap, t]);
+  }, [comboEditor, hasComboChanges, isComboAvailable, keymap, runtimeCombo, t]);
 
-  // Handle reset-to-default: reset the persistent keymap to the hard-coded
-  // default, then close the confirmation dialog. Gated on unlock (it edits +
-  // saves) like every other keymap edit.
+  // Reset combines the keymap's built-in defaults with every currently known
+  // runtime-combo slot, then persists both domains to flash.
   const handleResetToDefault = useCallback(
     () =>
       withUnlock(async () => {
         setIsResetting(true);
         try {
-          const ok = await keymap.resetToDefault();
-          if (ok) {
+          const keymapReset = await keymap.resetToDefault();
+          const combosReset = isComboAvailable
+            ? (
+                await Promise.all(
+                  [...runtimeCombo.combos].map((combo) =>
+                    runtimeCombo.resetCombo(combo.index),
+                  ),
+                )
+              ).every(Boolean)
+            : true;
+          let combosSaved = true;
+          if (isComboAvailable) {
+            combosSaved =
+              combosReset && Boolean(await runtimeCombo.saveChanges());
+          }
+          if (keymapReset && combosSaved) {
+            comboEditor.clearModified();
             setShowResetDialog(false);
           }
         } finally {
           setIsResetting(false);
         }
       }),
-    [keymap, withUnlock],
+    [comboEditor, isComboAvailable, keymap, runtimeCombo, withUnlock],
   );
 
   // Handle layer move up
@@ -537,6 +689,38 @@ export function KeymapPage() {
     loadRuntimeMacros,
   ]);
 
+  useEffect(() => {
+    if (keymap.isLoading) {
+      combosRequestedRef.current = false;
+      return;
+    }
+    if (
+      keymap.isFullyLoaded &&
+      isComboAvailable &&
+      !combosRequestedRef.current
+    ) {
+      combosRequestedRef.current = true;
+      void reloadRuntimeCombos();
+    }
+  }, [
+    keymap.isLoading,
+    keymap.isFullyLoaded,
+    isComboAvailable,
+    reloadRuntimeCombos,
+  ]);
+
+  useEffect(() => {
+    if (!isTabActive) {
+      setShowComboEditor(false);
+      setShowComboBindingSelector(false);
+      comboEditor.clearSelection();
+    } else if (combosRequestedRef.current && isComboAvailable) {
+      void runtimeCombo.loadCombos();
+    }
+    // A tab return must read edits made on Macro&Combo while this page was retained.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTabActive]);
+
   const mobileVisibleRemovedLayerIds = keymap.removedLayerIds.slice(0, 3);
   const mobileOverflowRemovedLayerIds = keymap.removedLayerIds.slice(3);
 
@@ -565,24 +749,6 @@ export function KeymapPage() {
           {/* Action Buttons */}
           {connection.isConnected && keymap.keymap && (
             <div className="keymap-actions flex flex-wrap items-center gap-2">
-              {inputStream.isAvailable && (
-                <EditorTooltip content={t("Toggle stream mode")}>
-                  <div className="hidden sm:flex min-h-9 items-center gap-2 px-3 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-                    <span className="hidden sm:inline text-xs text-[var(--color-text-muted)]">
-                      {t("Stream")}
-                    </span>
-                    <Switch.Root
-                      checked={inputStream.isEnabled}
-                      onCheckedChange={() => void inputStream.toggleStream()}
-                      disabled={inputStream.isToggling || keymap.isLoading}
-                      aria-label={t("Toggle stream mode")}
-                      className="w-10 h-5 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Switch.Thumb className="block w-4 h-4 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-                    </Switch.Root>
-                  </div>
-                </EditorTooltip>
-              )}
               {/* Reading is allowed while locked, so Reload sits outside the
                   lock branch below. */}
               <ResponsiveButton
@@ -637,10 +803,10 @@ export function KeymapPage() {
                       }}
                       discard={{
                         description: t(
-                          "Drops the unsaved edits in keyboard memory and reloads the keymap stored on the keyboard.",
+                          "Drops unsaved keymap and combo edits in keyboard memory, then reloads their saved values.",
                         ),
                         onSelect: () => void handleDiscard(),
-                        disabled: !keymap.hasUnsavedChanges || isDiscarding,
+                        disabled: !hasUnsavedChanges || isDiscarding,
                       }}
                     />
                   </div>
@@ -649,7 +815,10 @@ export function KeymapPage() {
                     className="btn-electric text-sm flex items-center gap-1.5"
                     onClick={handleSave}
                     disabled={
-                      isSaving || !keymap.hasUnsavedChanges || keymap.isLoading
+                      isSaving ||
+                      !hasUnsavedChanges ||
+                      keymap.isLoading ||
+                      Boolean(comboEditor.validationError && showComboEditor)
                     }
                   >
                     {isSaving ? (
@@ -745,7 +914,9 @@ export function KeymapPage() {
                               onClick={() =>
                                 handleMobileLayerAction(handleMoveLayerUp)
                               }
-                              disabled={selectedLayerIndex <= 0}
+                              disabled={
+                                !currentLayer || selectedLayerIndex <= 0
+                              }
                             >
                               <IconChevronUp size={19} />
                             </button>
@@ -761,8 +932,9 @@ export function KeymapPage() {
                                 handleMobileLayerAction(handleMoveLayerDown)
                               }
                               disabled={
+                                !currentLayer ||
                                 selectedLayerIndex >=
-                                keymap.keymap.layers.length - 1
+                                  keymap.keymap.layers.length - 1
                               }
                             >
                               <IconChevronDown size={19} />
@@ -773,6 +945,7 @@ export function KeymapPage() {
                               type="button"
                               className="keymap-settings-action"
                               aria-label={t("Rename current layer")}
+                              disabled={!currentLayer}
                               onClick={() =>
                                 handleMobileLayerAction(handleOpenRenameDialog)
                               }
@@ -985,31 +1158,6 @@ export function KeymapPage() {
                             )}
                           </p>
                         </div>
-
-                        {inputStream.isAvailable && (
-                          <div className="keymap-settings-switch-row">
-                            <label
-                              htmlFor="keymap-mobile-stream"
-                              className="text-sm font-medium"
-                            >
-                              {t("Stream mode")}
-                            </label>
-                            <Switch.Root
-                              id="keymap-mobile-stream"
-                              checked={inputStream.isEnabled}
-                              onCheckedChange={() =>
-                                void inputStream.toggleStream()
-                              }
-                              disabled={
-                                inputStream.isToggling || keymap.isLoading
-                              }
-                              aria-label={t("Toggle stream mode")}
-                              className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-border)] border border-[var(--color-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
-                            </Switch.Root>
-                          </div>
-                        )}
                       </section>
                     </div>
                   </Dialog.Content>
@@ -1104,7 +1252,7 @@ export function KeymapPage() {
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleMoveLayerUp}
-                      disabled={selectedLayerIndex <= 0}
+                      disabled={!currentLayer || selectedLayerIndex <= 0}
                       aria-label={t("Move layer up (higher priority)")}
                     >
                       <IconChevronUp
@@ -1122,6 +1270,7 @@ export function KeymapPage() {
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleMoveLayerDown}
                       disabled={
+                        !currentLayer ||
                         selectedLayerIndex >= keymap.keymap.layers.length - 1
                       }
                       aria-label={t("Move layer down (lower priority)")}
@@ -1141,6 +1290,7 @@ export function KeymapPage() {
                     <button
                       className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={handleOpenRenameDialog}
+                      disabled={!currentLayer}
                       aria-label={t("Rename current layer")}
                     >
                       <IconPencil
@@ -1357,43 +1507,63 @@ export function KeymapPage() {
             {/* Keyboard Layout */}
             {currentLayer && (
               <div className="keymap-preview glass-card p-3 sm:p-6 relative">
-                {/* Status indicator: unsaved edits (neon), saved-but-
+                <div className="mb-2 flex items-center justify-end gap-3">
+                  {/* Status indicator: unsaved edits (neon), saved-but-
                     customized-from-default (electric/blue), or saved-and-stock
                     (muted). */}
-                <div
-                  role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  className="flex w-fit ml-auto mb-2 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
-                  title={
-                    !keymap.hasUnsavedChanges &&
-                    keymap.isKeymapChangedFromDefault
-                      ? t("Saved — changed from the default keymap")
-                      : undefined
-                  }
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      keymap.hasUnsavedChanges
-                        ? "bg-[var(--color-neon)]"
-                        : keymap.isKeymapChangedFromDefault
-                          ? "bg-[var(--color-electric)]"
-                          : "bg-[var(--color-text-muted)]"
-                    }`}
-                  />
-                  <span
-                    className={
-                      keymap.hasUnsavedChanges
-                        ? "text-[var(--color-neon)]"
-                        : keymap.isKeymapChangedFromDefault
-                          ? "text-[var(--color-electric)]"
-                          : "text-[var(--color-text-muted)]"
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-xs"
+                    title={
+                      !keymap.hasUnsavedChanges &&
+                      keymap.isKeymapChangedFromDefault
+                        ? t("Saved — changed from the default keymap")
+                        : undefined
                     }
                   >
-                    {keymap.hasUnsavedChanges
-                      ? t("Unsaved changes")
-                      : t("Saved")}
-                  </span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        keymap.hasUnsavedChanges
+                          ? "bg-[var(--color-neon)]"
+                          : keymap.isKeymapChangedFromDefault
+                            ? "bg-[var(--color-electric)]"
+                            : "bg-[var(--color-text-muted)]"
+                      }`}
+                    />
+                    <span
+                      className={
+                        keymap.hasUnsavedChanges
+                          ? "text-[var(--color-neon)]"
+                          : keymap.isKeymapChangedFromDefault
+                            ? "text-[var(--color-electric)]"
+                            : "text-[var(--color-text-muted)]"
+                      }
+                    >
+                      {keymap.hasUnsavedChanges
+                        ? t("Unsaved changes")
+                        : t("Saved")}
+                    </span>
+                  </div>
+                  {inputStream.isAvailable && (
+                    <EditorTooltip content={t("Toggle stream mode")}>
+                      <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                        <span>{t("Stream")}</span>
+                        <Switch.Root
+                          checked={inputStream.isEnabled}
+                          onCheckedChange={() =>
+                            void inputStream.toggleStream()
+                          }
+                          disabled={inputStream.isToggling || keymap.isLoading}
+                          aria-label={t("Toggle stream mode")}
+                          className="relative h-4 w-7 shrink-0 rounded-full bg-[var(--color-border)] transition-colors data-[state=checked]:bg-[var(--color-electric)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-electric)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Switch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-3.5" />
+                        </Switch.Root>
+                      </label>
+                    </EditorTooltip>
+                  )}
                 </div>
                 <KeyboardLayout
                   layout={currentLayout}
@@ -1413,6 +1583,8 @@ export function KeymapPage() {
                   getDefaultBinding={keymap.getDefaultBinding}
                   keyboardLayout={keyboardLayoutContext.layout}
                   runtimeMacros={runtimeMacro.macros}
+                  combos={isComboAvailable ? runtimeCombo.combos : []}
+                  onComboClick={openComboBinding}
                   modules={
                     physicalLayoutModules.isAvailable
                       ? physicalLayoutModules.modules
@@ -1474,6 +1646,126 @@ export function KeymapPage() {
                   keyboardLayout={keyboardLayoutContext.layout}
                 />
               </div>
+            )}
+            {isComboAvailable && (
+              <section className="glass-card p-4 mt-6" aria-label={t("Combos")}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
+                    <IconLink
+                      size={17}
+                      className="text-[var(--color-electric)]"
+                    />
+                    {t("Combos")}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="p-1 rounded text-[var(--color-electric)] hover:bg-[var(--color-border)] disabled:opacity-40"
+                      onClick={() => void handleCreateCombo()}
+                      disabled={runtimeCombo.isLoading || !keymap.isFullyLoaded}
+                      aria-label={t("New combo")}
+                      title={t("New combo")}
+                    >
+                      <IconPlus size={18} />
+                    </button>
+                  </div>
+                </div>
+                {runtimeCombo.error && (
+                  <p role="alert" className="text-sm text-red-400 mb-2">
+                    {t(runtimeCombo.error)}
+                  </p>
+                )}
+                {comboEditor.statusMessage && (
+                  <p
+                    role="status"
+                    className="text-sm text-[var(--color-warning)] mb-2"
+                  >
+                    {comboEditor.statusMessage}
+                  </p>
+                )}
+                {runtimeCombo.combos.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    {t("No runtime combos configured")}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {runtimeCombo.combos.map((combo, position) => {
+                      const status = comboEditStatus(
+                        combo.source,
+                        combo.index,
+                        comboEditor.modifiedIndices,
+                      );
+                      const isUnsaved = status === "unsaved";
+
+                      return (
+                        <button
+                          key={combo.index}
+                          type="button"
+                          data-testid={`combo-list-item-${combo.index}`}
+                          className={`min-w-56 max-w-full flex-[1_1_14rem] p-3 rounded-lg border text-left transition-colors ${
+                            isUnsaved
+                              ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
+                              : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/60"
+                          } ${combo.enabled ? "" : "opacity-60"}`}
+                          onClick={() => openComboEditor(combo)}
+                        >
+                          <span className="flex items-center gap-1.5 text-sm font-medium truncate">
+                            <span
+                              className={`flex shrink-0 items-center gap-px ${
+                                isUnsaved
+                                  ? "text-[var(--color-neon)]"
+                                  : "text-[var(--color-electric)]"
+                              }`}
+                            >
+                              <IconLink size={14} aria-hidden="true" />
+                              {position + 1}
+                            </span>
+                            <span
+                              className={`truncate ${
+                                isUnsaved
+                                  ? "text-[var(--color-neon)]"
+                                  : "text-[var(--color-text)]"
+                              }`}
+                            >
+                              {combo.name ||
+                                t("Combo {{index}}", { index: combo.index })}
+                            </span>
+                            <StatusDot status={status} />
+                          </span>
+                          <span className="block text-xs text-[var(--color-text-muted)] truncate">
+                            {combo.keyPositions.join(" + ")}
+                          </span>
+                          <span className="block text-xs text-[var(--color-text-muted)] truncate">
+                            {t("Layers")}:{" "}
+                            {formatLayerScope(
+                              combo.layerMask,
+                              t,
+                              layersForSelector,
+                            )}
+                          </span>
+                          <span
+                            className={`block text-xs truncate ${
+                              isUnsaved
+                                ? "text-[var(--color-neon)]"
+                                : "text-[var(--color-electric)]"
+                            }`}
+                          >
+                            {formatComboBehavior(
+                              combo.behavior ??
+                                defaultBehaviorBinding(keymap.behaviors),
+                              keymap.behaviors,
+                              layersForSelector,
+                              keyboardLayoutContext.layout,
+                              runtimeMacro.macros,
+                              t,
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             )}
           </>
         )}
@@ -1568,9 +1860,23 @@ export function KeymapPage() {
             </Dialog.Title>
             <Dialog.Description className="text-sm text-[var(--color-text-muted)] mb-5">
               {t(
-                "This resets the saved keymap on your keyboard back to its hard-coded default and writes it to flash immediately. All saved key bindings will be lost. This cannot be undone.",
+                "This writes the selected defaults to your keyboard flash immediately. This cannot be undone.",
               )}
             </Dialog.Description>
+            <ul className="mb-5 list-disc space-y-1 pl-5 text-sm text-[var(--color-text-muted)]">
+              <li>
+                {t(
+                  "All saved key bindings are reset to the keyboard's built-in default keymap.",
+                )}
+              </li>
+              {isComboAvailable && (
+                <li>
+                  {t(
+                    "All saved runtime combos are reset to their firmware defaults.",
+                  )}
+                </li>
+              )}
+            </ul>
             <div className="flex gap-3">
               <button
                 className="flex-1 btn-ghost border border-[var(--color-border)]"
@@ -1600,11 +1906,124 @@ export function KeymapPage() {
         labeler={versionHistory.labeler}
       />
 
+      <Dialog.Root
+        open={showComboEditor && isTabActive}
+        onOpenChange={(open) => !open && setShowComboEditor(false)}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[10000]" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(96vw,900px)] max-h-[90vh] overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl z-[10000]"
+          >
+            <Dialog.Title className="sr-only">{t("Combo Editor")}</Dialog.Title>
+            <div className="flex justify-end p-2">
+              <Dialog.Close
+                className="p-1 rounded hover:bg-[var(--color-border)]"
+                aria-label={t("Close")}
+              >
+                <IconX size={18} />
+              </Dialog.Close>
+            </div>
+            {comboEditor.selectedIndex !== null && (
+              <ComboEditorCard
+                combo={comboEditor}
+                runtimeCombo={runtimeCombo}
+                keymap={keymap}
+                layers={layersForSelector}
+                keyboardLayout={keyboardLayoutContext.layout}
+                runtimeMacros={runtimeMacro.macros}
+              />
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <KeycodeSelector
+        open={showComboBindingSelector && isTabActive}
+        presentation={selectorMode}
+        modalLayer="nested"
+        floatingAnchorRef={keymapContentAnchorRef}
+        floatingPosition={sharedFloatingPosition}
+        onFloatingPositionChange={setSharedFloatingPosition}
+        onClose={() => setShowComboBindingSelector(false)}
+        onSelect={(binding) => {
+          comboEditor.applyDraftChange(
+            { ...comboEditor.draft, behavior: binding },
+            true,
+          );
+          setShowComboBindingSelector(false);
+        }}
+        targetLabel={`${t("Combo Editor")} · ${comboEditor.draft.name || comboEditor.draft.index}`}
+        currentBinding={comboEditor.draft.behavior}
+        behaviors={keymap.behaviors}
+        layers={layersForSelector}
+        keyboardLayout={keyboardLayoutContext.layout}
+        runtimeMacros={runtimeMacro.macros}
+        toolbar={
+          <div className="flex items-center gap-1">
+            <EditorTooltip content={t("Open Combo Editor")}>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-[var(--color-border)]"
+                aria-label={t("Open Combo Editor")}
+                onClick={returnToComboEditor}
+              >
+                <IconLink size={16} />
+              </button>
+            </EditorTooltip>
+            {selectorMode === "floating" ? (
+              <EditorTooltip content={t("Switch to dialog mode")}>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-[var(--color-border)]"
+                  aria-label={t("Dialog mode")}
+                  onClick={() => setSelectorMode("modal")}
+                >
+                  <IconArrowsMaximize size={16} />
+                </button>
+              </EditorTooltip>
+            ) : (
+              <EditorTooltip content={t("Switch to floating mode")}>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-[var(--color-border)]"
+                  aria-label={t("Floating mode")}
+                  onClick={() => setSelectorMode("floating")}
+                >
+                  <IconWindow size={16} />
+                </button>
+              </EditorTooltip>
+            )}
+          </div>
+        }
+      />
+
       {/* Keycode Selector Dialog */}
+      <MacroEditorDialog
+        key={macroEditorSession}
+        open={macroEditorMode !== null}
+        mode={macroEditorMode ?? "edit"}
+        editSlot={macroEditorSlot}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (macroEditorMode === "create") macroEditor.cancelCreate();
+            setMacroEditorMode(null);
+            if (macroEditorMode === "edit") void runtimeMacro.loadMacros();
+          }
+        }}
+        macro={macroEditor}
+        runtimeMacro={runtimeMacro}
+        keymap={keymap}
+        layers={layersForSelector}
+        keyboardLayout={keyboardLayoutContext.layout}
+      />
       <KeycodeSelector
         open={showKeycodeSelector && isTabActive && connection.isConnected}
         presentation={selectorMode}
         floatingAnchorRef={keymapContentAnchorRef}
+        floatingPosition={sharedFloatingPosition}
+        onFloatingPositionChange={setSharedFloatingPosition}
         selectionKey={`${currentLayer?.id}:${selectedKeyPosition}:${currentBinding?.behaviorId}:${currentBinding?.param1}:${currentBinding?.param2}`}
         targetLabel={selectorTargetLabel}
         busy={isApplyingBinding}
@@ -1613,17 +2032,7 @@ export function KeymapPage() {
           selectorMode === "floating" &&
           selectedKeyPosition !== null &&
           currentLayer ? (
-            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
-              <span className="text-xs truncate">
-                {currentLayer.name} ·{" "}
-                {t("Key {{position}} / {{count}}", {
-                  position: selectedKeyPosition + 1,
-                  count: Math.min(
-                    currentLayer.bindings.length,
-                    currentLayout?.keys.length ?? 0,
-                  ),
-                })}
-              </span>
+            <div className="flex shrink-0 items-center gap-1">
               <div className="flex gap-1 shrink-0">
                 <EditorTooltip content={t("Automatically select the next key")}>
                   <button
@@ -1704,6 +2113,7 @@ export function KeymapPage() {
         layers={layersForSelector}
         keyboardLayout={keyboardLayoutContext.layout}
         runtimeMacros={runtimeMacro.macros}
+        onOpenMacroEditor={handleOpenMacroEditor}
       />
     </div>
   );

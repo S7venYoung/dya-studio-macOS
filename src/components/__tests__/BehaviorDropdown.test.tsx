@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BehaviorDropdown } from "../BehaviorDropdown";
+import { getBehaviorMetadata } from "../../lib/behaviorMetadata";
 import { BEHAVIORS } from "../../lib/transport/behaviors";
 
 const behaviors = new Map(BEHAVIORS.map((behavior) => [behavior.id, behavior]));
@@ -22,6 +23,37 @@ function renderDropdown() {
   );
   return onSelect;
 }
+
+it("keeps the selected category by default and honors a saved OFF preference", async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(
+    <BehaviorDropdown
+      behaviors={behaviors}
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  const keep = screen.getByRole("button", { name: "Keep selected category" });
+  expect(keep).toHaveAttribute("aria-pressed", "true");
+  await user.click(screen.getByRole("button", { name: "Layers" }));
+  await user.click(screen.getByRole("button", { name: "Layer-Tap" }));
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(screen.getByRole("button", { name: "Layers" })).toHaveClass(
+    "text-[var(--color-electric)]",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Keep selected category" }),
+  );
+  expect(localStorage.getItem("behaviorDropdownKeepCategory")).toBe("false");
+  unmount();
+  renderDropdown();
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  expect(
+    screen.getByRole("button", { name: "Keep selected category" }),
+  ).toHaveAttribute("aria-pressed", "false");
+});
 
 it("keeps Quick Select settings inside the dropdown in floating mode", async () => {
   const user = userEvent.setup();
@@ -172,4 +204,35 @@ it("uses one ordered settings list with separate preset visibility and pin contr
       ) || "{}",
     ),
   ).toEqual({ hiddenPresets: [], pinnedBehaviorNames: [], order: [] });
+});
+
+it("offers saved macros in their own category when Runtime Macro is available", async () => {
+  const user = userEvent.setup();
+  const onMacroSelect = jest.fn();
+  render(
+    <BehaviorDropdown
+      behaviors={
+        new Map([[91, { id: 91, displayName: "Runtime Macro", metadata: [] }]])
+      }
+      selectedBehaviorId={null}
+      onSelect={jest.fn()}
+      onQuickSelect={jest.fn()}
+      runtimeMacros={[{ slot: 3, name: "Window layout" }]}
+      onMacroSelect={onMacroSelect}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "Select behavior" }));
+  await user.click(screen.getByRole("button", { name: "Macro" }));
+  await user.click(
+    screen.getByRole("button", { name: "Window layout Execute macro" }),
+  );
+
+  expect(onMacroSelect).toHaveBeenCalledWith(3);
+});
+
+it("groups Runtime Macro, Trans, and None with key input", () => {
+  expect(getBehaviorMetadata("Runtime Macro")?.category).toBe("keypress");
+  expect(getBehaviorMetadata("Trans")?.category).toBe("keypress");
+  expect(getBehaviorMetadata("None")?.category).toBe("keypress");
 });

@@ -41,7 +41,10 @@ import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-import { useFloatingWindow } from "../hooks/useFloatingWindow";
+import {
+  useFloatingWindow,
+  type FloatingWindowPosition,
+} from "../hooks/useFloatingWindow";
 import { useLanguage } from "../hooks/useLanguage";
 
 // =============================================================================
@@ -64,11 +67,18 @@ interface SelectedBehaviorInfo {
 
 interface KeycodeSelectorProps {
   presentation?: "modal" | "floating";
+  /** Renders above an already-open modal dialog when needed by a caller. */
+  modalLayer?: "default" | "nested";
   selectionKey?: string;
   /** Caller-owned identity for the item whose binding is being edited. */
   targetLabel?: ReactNode;
   toolbar?: ReactNode;
   floatingAnchorRef?: RefObject<HTMLElement | null>;
+  /** Caller-owned position shared across mutually exclusive floating editors. */
+  floatingPosition?: FloatingWindowPosition;
+  onFloatingPositionChange?: (
+    position: FloatingWindowPosition | undefined,
+  ) => void;
   busy?: boolean;
   error?: string | null;
   open: boolean;
@@ -80,6 +90,14 @@ interface KeycodeSelectorProps {
   keyboardLayout?: KeyboardLayoutType;
   behaviorQuickSelects?: string[]; // Optional list of behavior displayNameVariants for quick select
   runtimeMacros?: Array<{ slot: number; name?: string }>;
+  /**
+   * Opens the caller-owned runtime macro editor without changing this draft.
+   * A slot identifies the macro assigned to the active Runtime Macro binding;
+   * no slot starts the create flow.
+   */
+  onOpenMacroEditor?: (slot?: number) => void;
+  /** Lets a selector opened from another modal render above its parent. */
+  modalLayerClassName?: string;
 }
 
 // =============================================================================
@@ -102,7 +120,7 @@ function getParamTypeDescription(
         ? overrideMeta.param1Description
         : overrideMeta.param2Description;
     if (overrideDescription) {
-      return overrideDescription;
+      return t(overrideDescription);
     }
   }
   // From firmware metadata
@@ -111,9 +129,32 @@ function getParamTypeDescription(
       ? behaviorInfo.param1Descriptions
       : behaviorInfo.param2Descriptions;
   if (paramDescriptions.length == 1) {
-    return t("Select {{name}}", { name: paramDescriptions[0].name });
+    const description = paramDescriptions[0];
+    const name = description.layerId
+      ? t("Layer")
+      : description.hidUsage
+        ? t("Keycode")
+        : description.name;
+    return t("Select {{name}}", { name });
   }
   return t("Select options"); // Contains constant from multiple options
+}
+
+function getParamDisplayName(
+  behaviorInfo: SelectedBehaviorInfo,
+  paramNumber: 1 | 2,
+  t: (key: string) => string,
+): string {
+  const descriptions =
+    paramNumber === 1
+      ? behaviorInfo.param1Descriptions
+      : behaviorInfo.param2Descriptions;
+  const names = [
+    ...new Set(descriptions.map((description) => description.name)),
+  ];
+  return names.length === 1 && names[0]
+    ? t(names[0])
+    : t(paramNumber === 1 ? "param1" : "param2");
 }
 
 /**
@@ -218,10 +259,13 @@ function hasParam(
 
 export function KeycodeSelector({
   presentation = "modal",
+  modalLayer = "default",
   selectionKey,
   targetLabel,
   toolbar,
   floatingAnchorRef,
+  floatingPosition,
+  onFloatingPositionChange,
   busy = false,
   error,
   open,
@@ -233,14 +277,24 @@ export function KeycodeSelector({
   keyboardLayout,
   behaviorQuickSelects,
   runtimeMacros = [],
+  onOpenMacroEditor,
+  modalLayerClassName = "z-50",
 }: KeycodeSelectorProps) {
   const { t } = useLanguage();
   const floating = presentation === "floating";
+  const resolvedModalLayerClassName =
+    modalLayer === "nested" ? "z-[10001]" : modalLayerClassName;
   const activePresentation = useRef(presentation);
   useEffect(() => {
     activePresentation.current = presentation;
   }, [presentation]);
-  const floatingWindow = useFloatingWindow(floating, open, floatingAnchorRef);
+  const floatingWindow = useFloatingWindow(
+    floating,
+    open,
+    floatingAnchorRef,
+    floatingPosition,
+    onFloatingPositionChange,
+  );
   const editingNumber = useRef(false);
   // State
   const [selectedBehavior, setSelectedBehavior] = useState<number | null>(null);
@@ -366,6 +420,30 @@ export function KeycodeSelector({
     ],
   );
 
+  const handleMacroSelect = useCallback(
+    (slot: number) => {
+      const runtimeMacroBehavior = Array.from(behaviors.values()).find(
+        (behavior) =>
+          getBehaviorMetadata(behavior.displayName)?.param1Type === "macro",
+      );
+      if (!runtimeMacroBehavior) return;
+
+      setSelectedBehavior(runtimeMacroBehavior.id);
+      setParam1(slot);
+      setParam2(0);
+      setActiveParam(1);
+      if (closeOnSelect) {
+        onSelect({
+          behaviorId: runtimeMacroBehavior.id,
+          param1: slot,
+          param2: 0,
+        });
+        if (!floating) onClose();
+      }
+    },
+    [behaviors, closeOnSelect, floating, onClose, onSelect],
+  );
+
   const handleParam2Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam2(value);
@@ -489,17 +567,24 @@ export function KeycodeSelector({
       if (overrideType) {
         switch (overrideType) {
           case "macro":
-            return runtimeMacros.length > 0 ? (
-              <ButtonListSelector
-                options={runtimeMacros.map((macro) => ({
-                  value: macro.slot,
-                  label: macro.name || `Macro ${macro.slot}`,
-                }))}
-                value={value}
-                onChange={onChange}
-                columns={Math.min(runtimeMacros.length, 4)}
-              />
-            ) : (
+            if (runtimeMacros.length > 0 || onOpenMacroEditor) {
+              return (
+                <div className="space-y-2">
+                  {runtimeMacros.length > 0 && (
+                    <ButtonListSelector
+                      options={runtimeMacros.map((macro) => ({
+                        value: macro.slot,
+                        label: macro.name || `Macro ${macro.slot}`,
+                      }))}
+                      value={value}
+                      onChange={onChange}
+                      columns={Math.min(runtimeMacros.length, 4)}
+                    />
+                  )}
+                </div>
+              );
+            }
+            return (
               <input
                 type="number"
                 min={0}
@@ -640,7 +725,14 @@ export function KeycodeSelector({
       }
       return null;
     },
-    [layers, selectedBehaviorInfo, keyboardLayout, runtimeMacros, floating],
+    [
+      layers,
+      selectedBehaviorInfo,
+      keyboardLayout,
+      runtimeMacros,
+      floating,
+      onOpenMacroEditor,
+    ],
   );
 
   const activeDescriptions =
@@ -672,7 +764,7 @@ export function KeycodeSelector({
             className={`flex min-w-0 items-center gap-1 border-b-2 px-2 py-1 text-xs transition-colors ${activeParam === number ? "border-[var(--color-electric)] text-[var(--color-electric)]" : "border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/50"}`}
           >
             <span className="text-xs whitespace-nowrap">
-              {t(number === 1 ? "param1" : "param2")}:
+              {getParamDisplayName(selectedBehaviorInfo, number, t)}:
             </span>
             <span className="truncate text-xs font-mono text-[var(--color-neon)]">
               {formatParamValue(
@@ -687,6 +779,13 @@ export function KeycodeSelector({
             </span>
           </button>
         ))}
+      <span
+        role="status"
+        data-testid="active-param-description"
+        className="ml-2 min-w-[8rem] flex-1 self-center truncate text-xs text-[var(--color-text-muted)]"
+      >
+        {getParamTypeDescription(selectedBehaviorInfo, activeParam, t)}
+      </span>
     </div>
   );
 
@@ -699,12 +798,14 @@ export function KeycodeSelector({
     >
       <Dialog.Portal>
         {!floating && (
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+          <Dialog.Overlay
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${resolvedModalLayerClassName}`}
+          />
         )}
         <div
           className={
             floating
-              ? "fixed inset-0 z-50 overflow-hidden pointer-events-none [contain:paint]"
+              ? `fixed inset-0 ${resolvedModalLayerClassName} overflow-hidden pointer-events-none [contain:paint]`
               : "contents"
           }
         >
@@ -723,8 +824,8 @@ export function KeycodeSelector({
             }
             className={
               floating
-                ? "pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
-                : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden"
+                ? `pointer-events-auto fixed bottom-3 right-[var(--floating-right,0px)] w-[680px] max-w-full h-[min(480px,calc(100dvh-24px))] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
+                : `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full tablet:w-[90vw] max-w-4xl h-full tablet:h-[85vh] bg-[var(--color-surface)] rounded-none tablet:rounded-xl border border-[var(--color-border)] shadow-2xl ${resolvedModalLayerClassName} flex flex-col overflow-hidden`
             }
           >
             {error && (
@@ -768,9 +869,17 @@ export function KeycodeSelector({
                     </p>
                   )}
                 </div>
-                {floating && toolbar}
-                <div className="ml-auto flex items-center gap-1">
-                  {!floating && toolbar}
+                {floating &&
+                  selectedBehaviorInfo?.overrideMetadata?.description && (
+                    <span className="min-w-0 truncate text-xs text-[var(--color-text-muted)]">
+                      {t(selectedBehaviorInfo.overrideMetadata.description)}
+                    </span>
+                  )}
+                <div
+                  data-testid="binding-editor-actions"
+                  className="ml-auto flex shrink-0 items-center gap-1"
+                >
+                  {toolbar}
                   {!floating && (
                     <EditorTooltip
                       content={t(
@@ -861,6 +970,8 @@ export function KeycodeSelector({
                     onSelect={handleBehaviorSelect}
                     onQuickSelect={handleBehaviorSelect}
                     quickSelects={behaviorQuickSelects}
+                    runtimeMacros={runtimeMacros}
+                    onMacroSelect={handleMacroSelect}
                   />
                 )}
               </div>
@@ -874,19 +985,9 @@ export function KeycodeSelector({
                   <div
                     className={`px-4 pt-4 pb-1 ${floating ? "hidden" : "hidden tablet:block"}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs font-medium text-[var(--color-text-muted)]">
-                        {t("Parameters")}
-                      </label>
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {t(activeParam === 1 ? "param1" : "param2")} -{" "}
-                        {getParamTypeDescription(
-                          selectedBehaviorInfo,
-                          activeParam,
-                          t,
-                        )}
-                      </span>
-                    </div>
+                    <label className="text-xs font-medium text-[var(--color-text-muted)]">
+                      {t("Parameters")}
+                    </label>
                   </div>
                   {!inlineParamToolbar && parameterTabs}
 
@@ -938,6 +1039,24 @@ export function KeycodeSelector({
                             inlineParamToolbar ? parameterTabs : undefined,
                           )
                         : null}
+                    {activeOverride === "macro" && onOpenMacroEditor && (
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-dashed border-[var(--color-electric)]/60 px-3 py-2 text-sm font-medium text-[var(--color-electric)] hover:bg-[var(--color-electric)]/10"
+                          onClick={() => onOpenMacroEditor()}
+                        >
+                          {t("New macro")}
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-electric)]/50 hover:text-[var(--color-text)]"
+                          onClick={() => onOpenMacroEditor(param1)}
+                        >
+                          {t("Edit macros")}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

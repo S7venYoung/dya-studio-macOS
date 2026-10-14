@@ -31,6 +31,7 @@ import type { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-
  */
 export type BehaviorCategory =
   | "keypress" // Basic key input
+  | "macro" // Saved runtime macros
   | "layer" // Layer switching/activation
   | "mod" // Modifiers and mod-tap
   | "transport" // Bluetooth and output management
@@ -194,6 +195,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Key Press", "kp", "key_press"],
     shortCode: "KP",
     param1Type: "keycode",
+    param1Description: "Key to press",
     getDisplayText: (binding, context) => {
       return formatKeycode(binding.param1, context.keyboardLayout);
     },
@@ -208,6 +210,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Momentary Layer", "mo", "momentary"],
     shortCode: "MO",
     param1Type: "layer",
+    param1Description: "Layer active while held",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
       if (!context.shortFormat && context.layers && context.layers[layerNum]) {
@@ -223,6 +226,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["To Layer", "to"],
     shortCode: "TO",
     param1Type: "layer",
+    param1Description: "Layer to switch to",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
       if (!context.shortFormat && context.layers && context.layers[layerNum]) {
@@ -238,6 +242,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Toggle Layer", "tog", "toggle"],
     shortCode: "TG",
     param1Type: "layer",
+    param1Description: "Layer to toggle",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
       if (!context.shortFormat && context.layers && context.layers[layerNum]) {
@@ -254,6 +259,8 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     shortCode: "LT",
     param1Type: "layer",
     param2Type: "keycode",
+    param1Description: "Layer active while held",
+    param2Description: "Key sent on tap",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
       const layerName = context.shortFormat
@@ -268,7 +275,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // Miscellaneous Behaviors
   // ============================================================================
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["Trans", "Transparent"],
     shortCode: "▽",
     getDisplayText: (_binding, context) =>
@@ -277,7 +284,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   },
 
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["None"],
     shortCode: "✕",
     getDisplayText: (_binding, context) => (context.shortFormat ? "✕" : "None"),
@@ -293,6 +300,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     shortCode: "MT",
     param1Type: "keycode",
     param2Type: "keycode",
+    param2Description: "Key sent on tap",
     getDisplayText: (binding, context) => {
       const param1 = formatKeycode(binding.param1, context.keyboardLayout);
       const param2 = formatKeycode(binding.param2, context.keyboardLayout);
@@ -308,7 +316,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
   // Macro Behavior
   // ============================================================================
   {
-    category: "miscellaneous",
+    category: "keypress",
     displayNameVariants: ["Runtime Macro", "rmacro", "macro", "runtime_macro"],
     shortCode: "Macro",
     param1Type: "macro",
@@ -333,6 +341,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Key Toggle", "kt", "key_toggle"],
     shortCode: "KT",
     param1Type: "keycode",
+    param1Description: "Key to toggle",
     getDisplayText: (binding, context) => {
       const keyName = formatKeycode(binding.param1, context.keyboardLayout);
       return `KT ${keyName}`;
@@ -344,6 +353,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Sticky Key", "sk", "sticky_key"],
     shortCode: "SK",
     param1Type: "keycode",
+    param1Description: "Key held until the next key press",
     getDisplayText: (binding, context) => {
       const keyName = formatKeycode(binding.param1, context.keyboardLayout);
       return `SK ${keyName}`;
@@ -355,6 +365,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
     displayNameVariants: ["Sticky Layer", "sl", "sticky_layer"],
     shortCode: "SL",
     param1Type: "layer",
+    param1Description: "Layer active until the next key press",
     getDisplayText: (binding, context) => {
       const layerNum = binding.param1;
       if (!context.shortFormat && context.layers && context.layers[layerNum]) {
@@ -536,6 +547,7 @@ const BEHAVIOR_METADATA_BASE: BehaviorMetadata[] = [
       return null;
     },
     description: "Output selection (USB/BLE)",
+    param1Description: "Output to select (USB/BLE)",
   },
   // TODO: RGB Underglow
   // TODO: Backlight
