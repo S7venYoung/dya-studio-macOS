@@ -8,7 +8,7 @@ import {
   connectToPairedSerial,
 } from "@cormoran/zmk-studio-react-hook";
 import type { UseZMKAppOptions } from "@cormoran/zmk-studio-react-hook";
-import { connect as connectBLE } from "@zmkfirmware/zmk-studio-ts-client/transport/gatt";
+import { connectBluetooth } from "../lib/transport/bluetooth";
 import { connect as connectUSB } from "../lib/transport/usb";
 import { connect as connectDemo } from "../lib/transport/demo";
 import {
@@ -211,7 +211,7 @@ export function DeviceConnectionProvider({
     async (method: ConnectionMethod) => {
       let connectFn: () => Promise<RpcTransport>;
       if (method === "ble") {
-        connectFn = connectBLE;
+        connectFn = connectBluetooth;
       } else if (method === "demo") {
         connectFn = connectDemo;
       } else {

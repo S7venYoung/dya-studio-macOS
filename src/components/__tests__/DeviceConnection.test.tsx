@@ -35,9 +35,9 @@ jest.mock("../../lib/transport/demo", () => ({
   connect: jest.fn(),
 }));
 
-// Mock the BLE transport
-jest.mock("@zmkfirmware/zmk-studio-ts-client/transport/gatt", () => ({
-  connect: jest.fn(),
+// Mock the app-level BLE transport selector
+jest.mock("../../lib/transport/bluetooth", () => ({
+  connectBluetooth: jest.fn(),
 }));
 
 // Test component to verify ConnectionContext values
@@ -132,7 +132,7 @@ describe("DeviceConnection", () => {
       mocks.mockTransport,
     );
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("@zmkfirmware/zmk-studio-ts-client/transport/gatt").connect.mockResolvedValue(
+    require("../../lib/transport/bluetooth").connectBluetooth.mockResolvedValue(
       mocks.mockTransport,
     );
   });

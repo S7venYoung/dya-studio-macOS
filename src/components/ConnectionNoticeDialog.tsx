@@ -16,6 +16,7 @@ import {
 import type { ConnectionMethod } from "./DeviceConnection";
 import { saveNoticeAcceptance } from "../lib/connectionNoticeStorage";
 import { isUsbConnectionAvailable } from "../lib/transport/usb";
+import { isBluetoothConnectionAvailable } from "../lib/transport/bluetooth";
 import { useCallback, useMemo, useState } from "react";
 import { useLanguage } from "../hooks/useLanguage";
 
@@ -40,7 +41,7 @@ export function ConnectionNoticeDialog({
   const isUSB = method === "serial";
   const isBLE = method === "ble";
   const isUSBAvailable = useMemo(() => isUsbConnectionAvailable(), []);
-  const isBLEAvailable = useMemo(() => "bluetooth" in navigator, []);
+  const isBLEAvailable = useMemo(() => isBluetoothConnectionAvailable(), []);
   const canContinue = (isUSB && isUSBAvailable) || (isBLE && isBLEAvailable);
   const [neverShowAgain, setNeverShowAgain] = useState(false);
 

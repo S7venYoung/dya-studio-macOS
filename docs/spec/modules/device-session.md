@@ -14,6 +14,7 @@
 | S4   | [SplashScreen](../../../src/components/SplashScreen.tsx): `handleConnectClick`, `handleAgree`, `handleCancel`                                                               | notice と Demo bypass                              |
 | S5   | [StudioUnlockContext](../../../src/contexts/StudioUnlockContext.tsx): `runWithUnlock`, `requireUnlock`, `retryAll`, `cancel`                                                | shared retry / cooldown                            |
 | S6   | [DeviceConnection tests](../../../src/components/__tests__/DeviceConnection.test.tsx)、[unlock context tests](../../../src/contexts/__tests__/StudioUnlockContext.test.tsx) | reconnect、cancel、unlock retry の test 根拠       |
+| S7   | [native Bluetooth selector](../../../src/lib/transport/bluetooth.ts)、[CoreBluetooth bridge](../../../apple/Sources/DYAStudioMac/BluetoothController.swift)                    | macOS native scan、GATT RPC stream                 |
 
 ## 機能要求
 
@@ -37,7 +38,7 @@
 
 | ID          | 前提 → 操作                                        | 観測できる結果                                                                                                                                                  | 保存範囲・副作用                                                                                 | 根拠                                        |
 | ----------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| SESSION-001 | splash → USB / BLE を選ぶ                          | 初回 notice 未承諾なら notice dialog。Agree 後に serial / gatt transport を `zmkApp.connect` へ渡す                                                             | notice acceptance の保存は Splash の外部 storage module。BLE picker は user gesture で開く       | S2/S4                                       |
+| SESSION-001 | splash → USB / BLE を選ぶ                          | 初回 notice 未承諾なら notice dialog。Agree 後に serial / gatt transport を `zmkApp.connect` へ渡す。macOS native shell では CoreBluetooth bridge を優先する       | notice acceptance の保存は Splash の外部 storage module。BLE scan / picker は user gesture で開く | S2/S4                                       |
 | SESSION-002 | splash → `Try Demo Mode`                           | notice を通らず demo transport 接続を開始する                                                                                                                   | 接続成功後 `demo` を sessionStorage に保存可能                                                   | S2–S4                                       |
 | SESSION-003 | explicit connect 成功                              | device info name を持つ connected session を AppLayout に表示し、serial / demo だけ connection method を tab の sessionStorage に保存する                       | `dya-studio:connection-method`。BLE は再開対象外                                                 | S1–S3                                       |
 | SESSION-004 | page mount → saved method が demo                  | overlay 後に demo transport で一回 auto reconnect を試す                                                                                                        | sessionStorage は tab 単位。失敗 / cancel で splash へ戻るが saved method をこの経路では消さない | S2/S3                                       |
@@ -72,7 +73,7 @@
 
 ## 不変条件
 
-- SESSION-I01: BLE を sessionStorage へ保存も page-load auto reconnect もしない。browser picker は user gesture に依存する（S2/S3）。
+- SESSION-I01: BLE を sessionStorage へ保存も page-load auto reconnect もしない。browser picker と macOS native scan は user gesture に依存する（S2/S3）。
 - SESSION-I02: explicit Disconnect は保存済み serial/demo method を消すが、reconnect Cancel は消さない（S2/S3）。
 - SESSION-I03: auto reconnect は mount ごとの一回試行で、port なし・transport null・failure 時に connected UI を表示しない（S1/S2）。
 - SESSION-I04: unlock Cancel は parked request と proactive pending action を再送しない。unlock success 前の Retry も action を失わせない（S5/S6）。
@@ -98,4 +99,4 @@
 
 ## 未解決・未検証
 
-実ブラウザの Web Serial / Web Bluetooth picker、BLE non-Linux unlock、auto reconnect の実機 timeout、接続中の physical unplug、custom subsystem discovery の順序、unlock prompt の全 feature consumer は未検証。sessionStorage が利用不能なら normal explicit connect は動作し得るが、再開記憶は保証しない。
+実ブラウザの Web Serial / Web Bluetooth picker、macOS CoreBluetooth picker と実機通信、BLE non-Linux unlock、auto reconnect の実機 timeout、接続中の physical unplug、custom subsystem discovery の順序、unlock prompt の全 feature consumer は未検証。sessionStorage が利用不能なら normal explicit connect は動作し得るが、再開記憶は保証しない。

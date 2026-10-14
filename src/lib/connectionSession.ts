@@ -20,8 +20,9 @@ export function savedConnectionMethod(): ConnectionMethod | null {
 
 /**
  * Save a successfully connected method for this browser tab. BLE is excluded:
- * the browser picker must be opened by a user gesture, so retrying it during a
- * reload would only leave the splash screen in a failed state.
+ * browser and native Bluetooth discovery must be opened by a user gesture, so
+ * retrying it during a reload would only leave the splash screen in a failed
+ * state.
  */
 export function saveConnectionMethod(method: ConnectionMethod): void {
   if (method !== "demo" && method !== "serial") return;

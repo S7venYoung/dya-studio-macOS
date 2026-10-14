@@ -9,10 +9,11 @@ The bundled React files are served on the fixed loopback origin
 local storage (including the connection-notice preference) survives app
 restarts. The web view only loads it through the loopback address.
 
-The first bridge transport is native USB serial. React still consumes the same
-`RpcTransport` streams, keeping native details out of the application pages.
-Future CoreBluetooth support should be added behind the same bridge rather than
-inside React.
+The bridge provides native USB serial and CoreBluetooth transports. React still
+consumes the same `RpcTransport` streams, keeping native details out of the
+application pages. The Bluetooth transport scans for the ZMK Studio service,
+enables RPC notifications, and chunks writes to the characteristic's supported
+length.
 
 The DMG is intentionally built by GitHub Actions. Pushes to
 `codex/swiftui-native-bridge` produce an unsigned, ad-hoc-signed Apple Silicon

@@ -94,6 +94,7 @@ struct StudioWebView: NSViewRepresentable {
         weak var webView: WKWebView?
         var webServer: LocalWebServer?
         private let serial = SerialPortController()
+        private let bluetooth = BluetoothController()
 
         override init() {
             super.init()
@@ -102,6 +103,12 @@ struct StudioWebView: NSViewRepresentable {
             }
             serial.onDisconnect = { [weak self] in
                 self?.emit("serial-disconnect", detail: [:])
+            }
+            bluetooth.onData = { [weak self] data in
+                self?.emit("ble-data", detail: ["base64": data.base64EncodedString()])
+            }
+            bluetooth.onDisconnect = { [weak self] in
+                self?.emit("ble-disconnect", detail: [:])
             }
         }
 
@@ -136,6 +143,27 @@ struct StudioWebView: NSViewRepresentable {
                     replyHandler(true, nil)
                 case "serial.disconnect":
                     serial.disconnect(notify: false)
+                    replyHandler(true, nil)
+                case "ble.isAvailable":
+                    replyHandler(bluetooth.isAvailable, nil)
+                case "ble.connect":
+                    bluetooth.connect { result in
+                        switch result {
+                        case .success(let device): replyHandler(device, nil)
+                        case .failure(let error): replyHandler(nil, error.localizedDescription)
+                        }
+                    }
+                case "ble.write":
+                    guard let base64 = params["base64"] as? String,
+                          let data = Data(base64Encoded: base64) else {
+                        throw BridgeError.message("Invalid Bluetooth data")
+                    }
+                    bluetooth.write(data) { error in
+                        if let error { replyHandler(nil, error.localizedDescription) }
+                        else { replyHandler(true, nil) }
+                    }
+                case "ble.disconnect":
+                    bluetooth.disconnect(notify: false)
                     replyHandler(true, nil)
                 default:
                     replyHandler(nil, "Unsupported native method: \(method)")
