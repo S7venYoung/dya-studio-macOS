@@ -13,6 +13,7 @@
     "generate": "buf generate",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:serial": "node --test scripts/tests/managed-serial.test.mjs",
     "test:coverage": "jest --coverage",
     "prepare": "husky"
   },

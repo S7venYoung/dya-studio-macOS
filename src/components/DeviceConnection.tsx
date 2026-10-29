@@ -1,3 +1,7 @@
+import {
+  connectToPairedSerial,
+  releaseSerialConnections,
+} from "../lib/transport/managedSerial";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -12,7 +16,6 @@ import {
   useZMKApp,
   ZMKAppContext,
   getPairedSerialPorts,
-  connectToPairedSerial,
 } from "@cormoran/zmk-studio-react-hook";
 import type { UseZMKAppOptions } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectBLE } from "@zmkfirmware/zmk-studio-ts-client/transport/gatt";
@@ -92,6 +95,14 @@ export function DeviceConnectionProvider({
   connectTimeoutMs,
 }: DeviceConnectionProviderProps) {
   const zmkApp = useZMKApp({ connectTimeoutMs });
+  const connectingRef = useRef(false);
+  useEffect(() => {
+    window.addEventListener("pagehide", releaseSerialConnections);
+    return () => {
+      window.removeEventListener("pagehide", releaseSerialConnections);
+      releaseSerialConnections();
+    };
+  }, []);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Dev-only: log every notification pushed from the device, mirroring the RPC
@@ -223,6 +234,9 @@ export function DeviceConnectionProvider({
 
   const handleConnect = useCallback(
     async (method: ConnectionMethod) => {
+      if (connectingRef.current || isReconnecting || zmkApp.state.isLoading)
+        return;
+      connectingRef.current = true;
       let connectFn: () => Promise<RpcTransport>;
       if (method === "ble") {
         connectFn = connectBLE;
@@ -240,13 +254,16 @@ export function DeviceConnectionProvider({
         // dedupes against the `state.error` effect so the attempt counts once.
         reportConnectFailed(error);
         throw error;
+      } finally {
+        connectingRef.current = false;
       }
     },
-    [zmkApp, reportConnectFailed],
+    [zmkApp, reportConnectFailed, isReconnecting],
   );
 
   const handleDisconnect = useCallback(() => {
     zmkApp.disconnect();
+    releaseSerialConnections();
   }, [zmkApp]);
 
   const handleCancelReconnect = useCallback(() => {
@@ -257,6 +274,7 @@ export function DeviceConnectionProvider({
     // the connect screen doesn't stay stuck in the loading state; `disconnect`
     // also resets `isLoading`/`error` back to the idle disconnected state.
     zmkApp.disconnect();
+    releaseSerialConnections();
   }, [zmkApp]);
 
   const connectionValue: ConnectionContextValue = {

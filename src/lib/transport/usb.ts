@@ -1,8 +1,6 @@
+import { connectSerial } from "./managedSerial";
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
-import {
-  connectSerial,
-  isWebSerialSupported,
-} from "@cormoran/zmk-studio-react-hook";
+import { isWebSerialSupported } from "@cormoran/zmk-studio-react-hook";
 import { connect as connectWebUsb } from "./webUsb";
 
 export function shouldUseWebUsbForUsbConnection(
